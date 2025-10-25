@@ -21,11 +21,7 @@ void main() async {
 
     // 푸시 알림 권한 요청
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
 
     // FCM 토큰 가져오기
     final token = await messaging.getToken();
@@ -134,10 +130,7 @@ class _WebViewPageState extends State<WebViewPage> {
         child: Stack(
           children: [
             WebViewWidget(controller: _controller),
-            if (_isLoading)
-              const Center(
-                child: CircularProgressIndicator(),
-              ),
+            if (_isLoading) const Center(child: CircularProgressIndicator()),
             if (_errorMessage != null)
               Center(
                 child: Padding(
@@ -145,7 +138,11 @@ class _WebViewPageState extends State<WebViewPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Error loading page',

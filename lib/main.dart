@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,6 +14,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 가로 모드 방지 및 세로 모드 고정
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // Firebase 초기화 (실제 Firebase 프로젝트 없이도 컴파일 가능하도록 try-catch)
   try {
@@ -129,7 +136,21 @@ class _WebViewPageState extends State<WebViewPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            WebViewWidget(controller: _controller),
+            PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop) return;
+                if (await _controller.canGoBack()) {
+                  await _controller.goBack();
+                } else {
+                  // 더 이상 뒤로 갈 수 없으면 앱 종료 (기본 동작 수행을 위해 canPop을 활용하거나 직접 종료 제어 가능)
+                  if (context.mounted) {
+                    SystemNavigator.pop();
+                  }
+                }
+              },
+              child: WebViewWidget(controller: _controller),
+            ),
             if (_isLoading) const Center(child: CircularProgressIndicator()),
             if (_errorMessage != null)
               Center(

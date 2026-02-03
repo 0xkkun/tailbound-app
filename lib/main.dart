@@ -110,9 +110,22 @@ class _WebViewPageState extends State<WebViewPage> {
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('Web resource error: ${error.description}');
-            if (mounted) {
+            debugPrint('Failed URL: ${error.url}');
+            debugPrint('Error type: ${error.errorType}');
+            debugPrint('Error code: ${error.errorCode}');
+            
+            // 오디오/비디오 파일 로딩 에러는 무시 (게임은 계속 진행)
+            final url = error.url?.toLowerCase() ?? '';
+            final isMediaFile = url.endsWith('.mp3') || 
+                                url.endsWith('.mp4') || 
+                                url.endsWith('.wav') || 
+                                url.endsWith('.ogg') ||
+                                url.endsWith('.webm');
+            
+            // 미디어 파일이 아닌 경우에만 에러 표시
+            if (!isMediaFile && mounted) {
               setState(() {
-                _errorMessage = error.description;
+                _errorMessage = '${error.description}\nURL: ${error.url}';
               });
             }
           },
@@ -127,8 +140,18 @@ class _WebViewPageState extends State<WebViewPage> {
     // Android용 WebGL 및 하드웨어 가속 설정
     if (_controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
-      (_controller.platform as AndroidWebViewController)
-          .setMediaPlaybackRequiresUserGesture(false);
+      final androidController = _controller.platform as AndroidWebViewController;
+      androidController.setMediaPlaybackRequiresUserGesture(false);
+      
+      // WebView 추가 설정
+      androidController.setGeolocationPermissionsPromptCallbacks(
+        onShowPrompt: (request) async {
+          return GeolocationPermissionsResponse(
+            allow: false,
+            retain: false,
+          );
+        },
+      );
     }
 
     // iOS용 추가 설정

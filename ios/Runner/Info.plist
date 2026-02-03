@@ -63,6 +63,8 @@
 	</dict>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-2202284171552842~8016444869</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

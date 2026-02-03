@@ -5,6 +5,8 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'ad_manager.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -37,6 +39,13 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization skipped: $e');
   }
+
+  // AdMob 초기화
+  await MobileAds.instance.initialize();
+  debugPrint('AdMob initialized');
+
+  // 광고 미리 로드
+  AdManager().preloadAllAds();
 
   runApp(const MyApp());
 }
@@ -76,6 +85,66 @@ class _WebViewPageState extends State<WebViewPage> {
     _initializeWebView();
   }
 
+  /// WebView에서 광고 요청 처리
+  void _handleAdRequest(String message) async {
+    debugPrint('Ad request from WebView: $message');
+
+    // 메시지 파싱 (예: "artifact", "revival", "reroll")
+    RewardAdType? adType;
+    switch (message.toLowerCase()) {
+      case 'artifact':
+        adType = RewardAdType.artifact;
+        break;
+      case 'revival':
+        adType = RewardAdType.revival;
+        break;
+      case 'reroll':
+        adType = RewardAdType.reroll;
+        break;
+      default:
+        debugPrint('Unknown ad type: $message');
+        _sendAdResultToWebView(message, false, 'Unknown ad type');
+        return;
+    }
+
+    // 광고가 준비되었는지 확인
+    if (!AdManager().isAdReady(adType)) {
+      debugPrint('Ad not ready: $adType');
+      _sendAdResultToWebView(message, false, 'Ad not ready');
+      return;
+    }
+
+    // 광고 표시
+    final success = await AdManager().showRewardedAd(
+      adType,
+      onRewarded: (rewardType, rewardAmount) {
+        debugPrint('Rewarded: $rewardType, amount: $rewardAmount');
+        _sendAdResultToWebView(message, true, 'Success');
+      },
+      onAdClosed: () {
+        debugPrint('Ad closed');
+      },
+    );
+
+    if (!success) {
+      _sendAdResultToWebView(message, false, 'Failed to show ad');
+    }
+  }
+
+  /// 광고 결과를 WebView로 전달
+  void _sendAdResultToWebView(String adType, bool success, String message) {
+    final js = '''
+      if (window.onAdResult) {
+        window.onAdResult({
+          adType: "$adType",
+          success: $success,
+          message: "$message"
+        });
+      }
+    ''';
+    _controller.runJavaScript(js);
+  }
+
   void _initializeWebView() {
     // iOS/Android용 플랫폼별 설정
     late final PlatformWebViewControllerCreationParams params;
@@ -91,6 +160,12 @@ class _WebViewPageState extends State<WebViewPage> {
     _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..addJavaScriptChannel(
+        'FlutterAd',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleAdRequest(message.message);
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {

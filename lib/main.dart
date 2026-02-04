@@ -185,14 +185,16 @@ class _WebViewPageState extends State<WebViewPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse(
-        kDebugMode
-            // Android Emulator: 10.0.2.2 = localhost
-            // iOS Simulator: localhost or 127.0.0.1
-            // Real Device: Use your machine's IP (e.g., 192.168.x.x)
-            ? 'http://10.0.2.2:5173/'
-            : 'https://tailbound.vercel.app',
-      ));
+      ..loadRequest(
+        Uri.parse(
+          kDebugMode
+              // Android Emulator: 10.0.2.2 = localhost
+              // iOS Simulator: localhost or 127.0.0.1
+              // Real Device: Use your machine's IP (e.g., 192.168.x.x)
+              ? 'http://10.0.2.2:5173/'
+              : 'https://tailbound.vercel.app',
+        ),
+      );
 
     // Android용 WebGL 및 하드웨어 가속 설정
     if (_controller.platform is AndroidWebViewController) {

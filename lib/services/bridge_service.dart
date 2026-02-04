@@ -231,9 +231,13 @@ class BridgeService {
   Future<void> _pauseGame() async {
     try {
       await webViewController.runJavaScript('''
-        if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
-          window.__PIXI_APP__.ticker.stop();
+        if (window.__GAME_PAUSE__) {
+          window.__GAME_PAUSE__();
           console.log('[Flutter] Game paused for ad');
+        } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          // Fallback: ticker만 멈춤
+          window.__PIXI_APP__.ticker.stop();
+          console.log('[Flutter] Game paused (fallback) for ad');
         }
       ''');
     } catch (e) {
@@ -245,9 +249,13 @@ class BridgeService {
   Future<void> _resumeGame() async {
     try {
       await webViewController.runJavaScript('''
-        if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
-          window.__PIXI_APP__.ticker.start();
+        if (window.__GAME_RESUME__) {
+          window.__GAME_RESUME__();
           console.log('[Flutter] Game resumed after ad');
+        } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          // Fallback: ticker만 재개
+          window.__PIXI_APP__.ticker.start();
+          console.log('[Flutter] Game resumed (fallback) after ad');
         }
       ''');
     } catch (e) {

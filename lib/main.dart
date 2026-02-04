@@ -224,9 +224,8 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
+      body: Stack(
+        children: [
             PopScope(
               canPop: false,
               onPopInvokedWithResult: (didPop, result) async {

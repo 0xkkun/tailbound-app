@@ -16,17 +16,16 @@ class AdManager {
   AdManager._internal();
 
   // 보상형 광고 Ad Unit IDs
-  // TODO: AdMob에서 실제 Ad Unit ID로 교체 필요
   static const Map<RewardAdType, String> _adUnitIds = {
     RewardAdType.artifact: kDebugMode
         ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/XXXXXXXXXX', // 실제 유물 광고 ID
+        : 'ca-app-pub-2202284171552842/5443086569', // iOS 유물 광고 ID
     RewardAdType.revival: kDebugMode
         ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/YYYYYYYYYY', // 실제 부활 광고 ID
+        : 'ca-app-pub-2202284171552842/9888871680', // iOS 부활 광고 ID
     RewardAdType.reroll: kDebugMode
         ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/ZZZZZZZZZZ', // 실제 리롤 광고 ID
+        : 'ca-app-pub-2202284171552842/9114303494', // iOS 리롤 광고 ID
   };
 
   // 현재 로드된 광고들

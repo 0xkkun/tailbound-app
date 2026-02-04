@@ -45,3 +45,8 @@ app.*.map.json
 /android/app/release
 ios/build/
 ios/exportOptions.plist
+
+# Android signing
+android/key.properties
+*.keystore
+*.jks

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_manager.dart';
+import 'services/bridge_service.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -17,7 +19,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 가로 모드 방지 및 세로 모드 고정
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -76,6 +78,7 @@ class WebViewPage extends StatefulWidget {
 
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController _controller;
+  late final BridgeService _bridgeService;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -85,64 +88,31 @@ class _WebViewPageState extends State<WebViewPage> {
     _initializeWebView();
   }
 
-  /// WebView에서 광고 요청 처리
-  void _handleAdRequest(String message) async {
-    debugPrint('Ad request from WebView: $message');
+  /// 앱 환경 정보를 WebView에 주입
+  Future<void> _injectAppEnvironment() async {
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+    final safeAreaLeft = MediaQuery.of(context).padding.left;
+    final safeAreaRight = MediaQuery.of(context).padding.right;
 
-    // 메시지 파싱 (예: "artifact", "revival", "reroll")
-    RewardAdType? adType;
-    switch (message.toLowerCase()) {
-      case 'artifact':
-        adType = RewardAdType.artifact;
-        break;
-      case 'revival':
-        adType = RewardAdType.revival;
-        break;
-      case 'reroll':
-        adType = RewardAdType.reroll;
-        break;
-      default:
-        debugPrint('Unknown ad type: $message');
-        _sendAdResultToWebView(message, false, 'Unknown ad type');
-        return;
-    }
-
-    // 광고가 준비되었는지 확인
-    if (!AdManager().isAdReady(adType)) {
-      debugPrint('Ad not ready: $adType');
-      _sendAdResultToWebView(message, false, 'Ad not ready');
-      return;
-    }
-
-    // 광고 표시
-    final success = await AdManager().showRewardedAd(
-      adType,
-      onRewarded: (rewardType, rewardAmount) {
-        debugPrint('Rewarded: $rewardType, amount: $rewardAmount');
-        _sendAdResultToWebView(message, true, 'Success');
-      },
-      onAdClosed: () {
-        debugPrint('Ad closed');
-      },
-    );
-
-    if (!success) {
-      _sendAdResultToWebView(message, false, 'Failed to show ad');
-    }
-  }
-
-  /// 광고 결과를 WebView로 전달
-  void _sendAdResultToWebView(String adType, bool success, String message) {
-    final js = '''
-      if (window.onAdResult) {
-        window.onAdResult({
-          adType: "$adType",
-          success: $success,
-          message: "$message"
-        });
-      }
+    final js =
+        '''
+      window.__APP_ENV__ = {
+        platform: 'flutter',
+        os: '${Platform.isIOS ? 'ios' : 'android'}',
+        version: '1.0.0',
+        safeArea: {
+          top: $safeAreaTop,
+          bottom: $safeAreaBottom,
+          left: $safeAreaLeft,
+          right: $safeAreaRight
+        }
+      };
+      console.log('[Flutter] App environment injected:', window.__APP_ENV__);
     ''';
-    _controller.runJavaScript(js);
+
+    await _controller.runJavaScript(js);
+    debugPrint('[Flutter] App environment injected');
   }
 
   void _initializeWebView() {
@@ -161,9 +131,9 @@ class _WebViewPageState extends State<WebViewPage> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
       ..addJavaScriptChannel(
-        'FlutterAd',
+        'FlutterBridge',
         onMessageReceived: (JavaScriptMessage message) {
-          _handleAdRequest(message.message);
+          _bridgeService.handleMessage(message.message);
         },
       )
       ..setNavigationDelegate(
@@ -176,11 +146,14 @@ class _WebViewPageState extends State<WebViewPage> {
               });
             }
           },
-          onPageFinished: (String url) {
+          onPageFinished: (String url) async {
             if (mounted) {
               setState(() {
                 _isLoading = false;
               });
+
+              // 앱 환경 정보 주입
+              await _injectAppEnvironment();
             }
           },
           onWebResourceError: (WebResourceError error) {
@@ -188,15 +161,16 @@ class _WebViewPageState extends State<WebViewPage> {
             debugPrint('Failed URL: ${error.url}');
             debugPrint('Error type: ${error.errorType}');
             debugPrint('Error code: ${error.errorCode}');
-            
+
             // 오디오/비디오 파일 로딩 에러는 무시 (게임은 계속 진행)
             final url = error.url?.toLowerCase() ?? '';
-            final isMediaFile = url.endsWith('.mp3') || 
-                                url.endsWith('.mp4') || 
-                                url.endsWith('.wav') || 
-                                url.endsWith('.ogg') ||
-                                url.endsWith('.webm');
-            
+            final isMediaFile =
+                url.endsWith('.mp3') ||
+                url.endsWith('.mp4') ||
+                url.endsWith('.wav') ||
+                url.endsWith('.ogg') ||
+                url.endsWith('.webm');
+
             // 미디어 파일이 아닌 경우에만 에러 표시
             if (!isMediaFile && mounted) {
               setState(() {
@@ -215,16 +189,14 @@ class _WebViewPageState extends State<WebViewPage> {
     // Android용 WebGL 및 하드웨어 가속 설정
     if (_controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
-      final androidController = _controller.platform as AndroidWebViewController;
+      final androidController =
+          _controller.platform as AndroidWebViewController;
       androidController.setMediaPlaybackRequiresUserGesture(false);
-      
+
       // WebView 추가 설정
       androidController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          return GeolocationPermissionsResponse(
-            allow: false,
-            retain: false,
-          );
+          return GeolocationPermissionsResponse(allow: false, retain: false);
         },
       );
     }
@@ -234,6 +206,9 @@ class _WebViewPageState extends State<WebViewPage> {
       (_controller.platform as WebKitWebViewController)
           .setAllowsBackForwardNavigationGestures(true);
     }
+
+    // BridgeService 초기화
+    _bridgeService = BridgeService(_controller);
   }
 
   @override

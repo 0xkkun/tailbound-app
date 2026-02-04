@@ -1,11 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// 보상형 광고 타입
 enum RewardAdType {
-  artifact,  // 유물
-  revival,   // 부활
-  reroll,    // 리롤
+  artifact, // 유물
+  revival, // 부활
+  reroll, // 리롤
 }
 
 /// 광고 매니저 클래스
@@ -15,18 +17,40 @@ class AdManager {
   factory AdManager() => _instance;
   AdManager._internal();
 
-  // 보상형 광고 Ad Unit IDs
-  static const Map<RewardAdType, String> _adUnitIds = {
-    RewardAdType.artifact: kDebugMode
-        ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/5443086569', // iOS 유물 광고 ID
-    RewardAdType.revival: kDebugMode
-        ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/9888871680', // iOS 부활 광고 ID
-    RewardAdType.reroll: kDebugMode
-        ? 'ca-app-pub-3940256099942544/5224354917' // 테스트 ID
-        : 'ca-app-pub-2202284171552842/9114303494', // iOS 리롤 광고 ID
+  // 테스트 광고 ID (Google 공식)
+  static const String _testAdUnitId = 'ca-app-pub-3940256099942544/5224354917';
+
+  // iOS 광고 Unit IDs
+  static const Map<RewardAdType, String> _iosAdUnitIds = {
+    RewardAdType.artifact: 'ca-app-pub-2202284171552842/5443086569',
+    RewardAdType.revival: 'ca-app-pub-2202284171552842/9888871680',
+    RewardAdType.reroll: 'ca-app-pub-2202284171552842/9114303494',
   };
+
+  // Android 광고 Unit IDs
+  static const Map<RewardAdType, String> _androidAdUnitIds = {
+    RewardAdType.artifact: 'ca-app-pub-2202284171552842/1063890252',
+    RewardAdType.revival: 'ca-app-pub-2202284171552842/4464513983',
+    RewardAdType.reroll: 'ca-app-pub-2202284171552842/6886770996',
+  };
+
+  /// 플랫폼 및 디버그 모드에 따른 광고 ID 반환
+  static String _getAdUnitId(RewardAdType type) {
+    // Debug 모드: 테스트 광고
+    if (kDebugMode) {
+      return _testAdUnitId;
+    }
+
+    // Release 모드: 플랫폼별 실제 광고
+    if (Platform.isIOS) {
+      return _iosAdUnitIds[type]!;
+    } else if (Platform.isAndroid) {
+      return _androidAdUnitIds[type]!;
+    }
+
+    // Fallback (테스트 ID)
+    return _testAdUnitId;
+  }
 
   // 현재 로드된 광고들
   final Map<RewardAdType, RewardedAd?> _loadedAds = {};
@@ -46,7 +70,7 @@ class AdManager {
     debugPrint('Loading rewarded ad: $type');
 
     await RewardedAd.load(
-      adUnitId: _adUnitIds[type]!,
+      adUnitId: _getAdUnitId(type),
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
@@ -99,7 +123,7 @@ class AdManager {
     Function()? onAdClosed,
   }) async {
     final ad = _loadedAds[type];
-    
+
     if (ad == null) {
       debugPrint('Ad not ready: $type');
       // 광고가 없으면 다시 로드 시도
@@ -133,7 +157,9 @@ class AdManager {
     // 광고 표시
     await ad.show(
       onUserEarnedReward: (ad, reward) {
-        debugPrint('User earned reward: ${reward.type}, amount: ${reward.amount}');
+        debugPrint(
+          'User earned reward: ${reward.type}, amount: ${reward.amount}',
+        );
         rewarded = true;
         onRewarded(reward.type, reward.amount.toInt());
       },

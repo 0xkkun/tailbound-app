@@ -45,6 +45,18 @@ class BridgeService {
           case 'share.open':
             result = await _shareContent(payload);
             break;
+          case 'analytics.click':
+            result = await _handleAnalyticsClick(payload);
+            break;
+          case 'analytics.impression':
+            result = await _handleAnalyticsImpression(payload);
+            break;
+          case 'gameCenter.openLeaderboard':
+            result = await _handleGameCenterOpenLeaderboard();
+            break;
+          case 'gameCenter.submitScore':
+            result = await _handleGameCenterSubmitScore(payload);
+            break;
           default:
             throw Exception('Unknown command: $type');
         }
@@ -175,6 +187,39 @@ class BridgeService {
     debugPrint('[Bridge] Share: $url');
 
     return {'success': true};
+  }
+
+  /// Analytics 클릭 이벤트 (더미 구현)
+  Future<Map<String, dynamic>> _handleAnalyticsClick(
+    Map<String, dynamic> payload,
+  ) async {
+    final params = payload['params'] as Map<String, dynamic>?;
+    debugPrint('[Bridge] Analytics Click (not implemented): $params');
+    return {'success': true};
+  }
+
+  /// Analytics 노출 이벤트 (더미 구현)
+  Future<Map<String, dynamic>> _handleAnalyticsImpression(
+    Map<String, dynamic> payload,
+  ) async {
+    final params = payload['params'] as Map<String, dynamic>?;
+    debugPrint('[Bridge] Analytics Impression (not implemented): $params');
+    return {'success': true};
+  }
+
+  /// Game Center 리더보드 열기 (더미 구현)
+  Future<Map<String, dynamic>> _handleGameCenterOpenLeaderboard() async {
+    debugPrint('[Bridge] Game Center Open Leaderboard (not implemented)');
+    return {'success': false};
+  }
+
+  /// Game Center 점수 제출 (더미 구현)
+  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(
+    Map<String, dynamic> payload,
+  ) async {
+    final score = payload['score'] as String?;
+    debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
+    return {'success': false, 'submitted': false};
   }
 
   /// 결과를 WebView로 전송 (CustomEvent)

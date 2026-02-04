@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -184,11 +185,16 @@ class _WebViewPageState extends State<WebViewPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse(
-        kDebugMode
-            ? 'http://192.168.45.39:5173/' // 로컬 개발 서버
-            : 'https://tailbound.vercel.app', // 프로덕션
-      ));
+      ..loadRequest(
+        Uri.parse(
+          kDebugMode
+              // Android Emulator: 10.0.2.2 = localhost
+              // iOS Simulator: localhost or 127.0.0.1
+              // Real Device: Use your machine's IP (e.g., 192.168.x.x)
+              ? 'http://10.0.2.2:5173/'
+              : 'https://tailbound.vercel.app',
+        ),
+      );
 
     // Android용 WebGL 및 하드웨어 가속 설정
     if (_controller.platform is AndroidWebViewController) {
@@ -218,64 +224,62 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            PopScope(
-              canPop: false,
-              onPopInvokedWithResult: (didPop, result) async {
-                if (didPop) return;
-                if (await _controller.canGoBack()) {
-                  await _controller.goBack();
-                } else {
-                  // 더 이상 뒤로 갈 수 없으면 앱 종료 (기본 동작 수행을 위해 canPop을 활용하거나 직접 종료 제어 가능)
-                  if (context.mounted) {
-                    SystemNavigator.pop();
-                  }
+      body: Stack(
+        children: [
+          PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) async {
+              if (didPop) return;
+              if (await _controller.canGoBack()) {
+                await _controller.goBack();
+              } else {
+                // 더 이상 뒤로 갈 수 없으면 앱 종료 (기본 동작 수행을 위해 canPop을 활용하거나 직접 종료 제어 가능)
+                if (context.mounted) {
+                  SystemNavigator.pop();
                 }
-              },
-              child: WebViewWidget(controller: _controller),
-            ),
-            if (_isLoading) const Center(child: CircularProgressIndicator()),
-            if (_errorMessage != null)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading page',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _errorMessage = null;
-                          });
-                          _controller.reload();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
+              }
+            },
+            child: WebViewWidget(controller: _controller),
+          ),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_errorMessage != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading page',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _errorMessage = null;
+                        });
+                        _controller.reload();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

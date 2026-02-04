@@ -45,6 +45,18 @@ class BridgeService {
           case 'share.open':
             result = await _shareContent(payload);
             break;
+          case 'analytics.click':
+            result = await _handleAnalyticsClick(payload);
+            break;
+          case 'analytics.impression':
+            result = await _handleAnalyticsImpression(payload);
+            break;
+          case 'gameCenter.openLeaderboard':
+            result = await _handleGameCenterOpenLeaderboard();
+            break;
+          case 'gameCenter.submitScore':
+            result = await _handleGameCenterSubmitScore(payload);
+            break;
           default:
             throw Exception('Unknown command: $type');
         }
@@ -77,6 +89,9 @@ class BridgeService {
       case 'reroll':
         adType = RewardAdType.reroll;
         break;
+      case 'bundle':
+        adType = RewardAdType.bundle;
+        break;
       default:
         throw Exception('Unknown ad type: $adTypeStr');
     }
@@ -84,6 +99,9 @@ class BridgeService {
     if (!AdManager().isAdReady(adType)) {
       throw Exception('Ad not ready: $adTypeStr');
     }
+
+    // 광고 표시 전 게임 pause
+    await _pauseGame();
 
     bool rewarded = false;
     final success = await AdManager().showRewardedAd(
@@ -94,9 +112,12 @@ class BridgeService {
       },
       onAdClosed: () {
         debugPrint('[Bridge] Ad closed');
+        // 광고 종료 후 게임 resume
+        _resumeGame();
       },
     );
 
+    debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
     return {'success': success, 'rewarded': rewarded};
   }
 
@@ -175,6 +196,75 @@ class BridgeService {
     debugPrint('[Bridge] Share: $url');
 
     return {'success': true};
+  }
+
+  /// Analytics 클릭 이벤트 (더미 구현)
+  Future<Map<String, dynamic>> _handleAnalyticsClick(
+    Map<String, dynamic> payload,
+  ) async {
+    final params = payload['params'] as Map<String, dynamic>?;
+    debugPrint('[Bridge] Analytics Click (not implemented): $params');
+    return {'success': true};
+  }
+
+  /// Analytics 노출 이벤트 (더미 구현)
+  Future<Map<String, dynamic>> _handleAnalyticsImpression(
+    Map<String, dynamic> payload,
+  ) async {
+    final params = payload['params'] as Map<String, dynamic>?;
+    debugPrint('[Bridge] Analytics Impression (not implemented): $params');
+    return {'success': true};
+  }
+
+  /// Game Center 리더보드 열기 (더미 구현)
+  Future<Map<String, dynamic>> _handleGameCenterOpenLeaderboard() async {
+    debugPrint('[Bridge] Game Center Open Leaderboard (not implemented)');
+    return {'success': false};
+  }
+
+  /// Game Center 점수 제출 (더미 구현)
+  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(
+    Map<String, dynamic> payload,
+  ) async {
+    final score = payload['score'] as String?;
+    debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
+    return {'success': false, 'submitted': false};
+  }
+
+  /// 게임 pause (광고 표시 전)
+  Future<void> _pauseGame() async {
+    try {
+      await webViewController.runJavaScript('''
+        if (window.__GAME_PAUSE__) {
+          window.__GAME_PAUSE__();
+          console.log('[Flutter] Game paused for ad');
+        } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          // Fallback: ticker만 멈춤
+          window.__PIXI_APP__.ticker.stop();
+          console.log('[Flutter] Game paused (fallback) for ad');
+        }
+      ''');
+    } catch (e) {
+      debugPrint('[Bridge] Failed to pause game: $e');
+    }
+  }
+
+  /// 게임 resume (광고 종료 후)
+  Future<void> _resumeGame() async {
+    try {
+      await webViewController.runJavaScript('''
+        if (window.__GAME_RESUME__) {
+          window.__GAME_RESUME__();
+          console.log('[Flutter] Game resumed after ad');
+        } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          // Fallback: ticker만 재개
+          window.__PIXI_APP__.ticker.start();
+          console.log('[Flutter] Game resumed (fallback) after ad');
+        }
+      ''');
+    } catch (e) {
+      debugPrint('[Bridge] Failed to resume game: $e');
+    }
   }
 
   /// 결과를 WebView로 전송 (CustomEvent)

@@ -184,7 +184,11 @@ class _WebViewPageState extends State<WebViewPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse('https://tailbound.vercel.app'));
+      ..loadRequest(Uri.parse(
+        kDebugMode
+            ? 'http://192.168.45.39:5173/' // 로컬 개발 서버
+            : 'https://tailbound.vercel.app', // 프로덕션
+      ));
 
     // Android용 WebGL 및 하드웨어 가속 설정
     if (_controller.platform is AndroidWebViewController) {

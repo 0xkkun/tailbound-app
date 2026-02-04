@@ -3,9 +3,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// 보상형 광고 타입
 enum RewardAdType {
-  artifact,  // 유물
-  revival,   // 부활
-  reroll,    // 리롤
+  artifact, // 유물
+  revival, // 부활
+  reroll, // 리롤
 }
 
 /// 광고 매니저 클래스
@@ -99,7 +99,7 @@ class AdManager {
     Function()? onAdClosed,
   }) async {
     final ad = _loadedAds[type];
-    
+
     if (ad == null) {
       debugPrint('Ad not ready: $type');
       // 광고가 없으면 다시 로드 시도
@@ -133,7 +133,9 @@ class AdManager {
     // 광고 표시
     await ad.show(
       onUserEarnedReward: (ad, reward) {
-        debugPrint('User earned reward: ${reward.type}, amount: ${reward.amount}');
+        debugPrint(
+          'User earned reward: ${reward.type}, amount: ${reward.amount}',
+        );
         rewarded = true;
         onRewarded(reward.type, reward.amount.toInt());
       },

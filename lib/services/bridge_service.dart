@@ -11,7 +11,7 @@ import '../ad_manager.dart';
 /// 웹 게임과 네이티브 기능 간의 통합 브리지
 class BridgeService {
   final WebViewController webViewController;
-  
+
   BridgeService(this.webViewController);
 
   /// JavaScript Channel 메시지 핸들러
@@ -60,7 +60,9 @@ class BridgeService {
   }
 
   /// 광고 요청 처리
-  Future<Map<String, dynamic>> _handleAdRequest(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> _handleAdRequest(
+    Map<String, dynamic> payload,
+  ) async {
     final adTypeStr = payload['adType'] as String;
     debugPrint('[Bridge] Ad request: $adTypeStr');
 
@@ -95,10 +97,7 @@ class BridgeService {
       },
     );
 
-    return {
-      'success': success,
-      'rewarded': rewarded,
-    };
+    return {'success': success, 'rewarded': rewarded};
   }
 
   /// Safe Area 조회
@@ -123,9 +122,7 @@ class BridgeService {
 
     debugPrint('[Bridge] Storage set: $key');
 
-    return {
-      'success': true,
-    };
+    return {'success': true};
   }
 
   /// 로컬 스토리지 조회
@@ -137,13 +134,13 @@ class BridgeService {
 
     debugPrint('[Bridge] Storage get: $key = $value');
 
-    return {
-      'value': value,
-    };
+    return {'value': value};
   }
 
   /// 햅틱 피드백
-  Future<Map<String, dynamic>> _triggerHaptic(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> _triggerHaptic(
+    Map<String, dynamic> payload,
+  ) async {
     final style = payload['style'] as String;
 
     switch (style) {
@@ -162,13 +159,13 @@ class BridgeService {
 
     debugPrint('[Bridge] Haptic: $style');
 
-    return {
-      'success': true,
-    };
+    return {'success': true};
   }
 
   /// 공유 다이얼로그
-  Future<Map<String, dynamic>> _shareContent(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> _shareContent(
+    Map<String, dynamic> payload,
+  ) async {
     final url = payload['url'] as String;
     final title = payload['title'] as String?;
 
@@ -177,9 +174,7 @@ class BridgeService {
 
     debugPrint('[Bridge] Share: $url');
 
-    return {
-      'success': true,
-    };
+    return {'success': true};
   }
 
   /// 결과를 WebView로 전송 (CustomEvent)
@@ -200,7 +195,8 @@ class BridgeService {
     };
 
     final resultJson = jsonEncode(result);
-    final js = '''
+    final js =
+        '''
       window.dispatchEvent(new CustomEvent('flutterBridgeResult', {
         detail: $resultJson
       }));

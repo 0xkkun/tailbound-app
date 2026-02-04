@@ -89,6 +89,9 @@ class BridgeService {
       case 'reroll':
         adType = RewardAdType.reroll;
         break;
+      case 'bundle':
+        adType = RewardAdType.bundle;
+        break;
       default:
         throw Exception('Unknown ad type: $adTypeStr');
     }
@@ -114,6 +117,7 @@ class BridgeService {
       },
     );
 
+    debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
     return {'success': success, 'rewarded': rewarded};
   }
 

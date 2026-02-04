@@ -27,11 +27,11 @@ class AdManager {
     RewardAdType.reroll: 'ca-app-pub-2202284171552842/9114303494',
   };
 
-  // Android 광고 Unit IDs (TODO: AdMob에서 생성 후 추가)
+  // Android 광고 Unit IDs
   static const Map<RewardAdType, String> _androidAdUnitIds = {
-    RewardAdType.artifact: 'ca-app-pub-3940256099942544/5224354917', // TODO
-    RewardAdType.revival: 'ca-app-pub-3940256099942544/5224354917', // TODO
-    RewardAdType.reroll: 'ca-app-pub-3940256099942544/5224354917', // TODO
+    RewardAdType.artifact: 'ca-app-pub-2202284171552842/1063890252',
+    RewardAdType.revival: 'ca-app-pub-2202284171552842/4464513983',
+    RewardAdType.reroll: 'ca-app-pub-2202284171552842/6886770996',
   };
 
   /// 플랫폼 및 디버그 모드에 따른 광고 ID 반환

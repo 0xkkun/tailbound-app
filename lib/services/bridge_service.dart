@@ -97,6 +97,9 @@ class BridgeService {
       throw Exception('Ad not ready: $adTypeStr');
     }
 
+    // 광고 표시 전 게임 pause
+    await _pauseGame();
+
     bool rewarded = false;
     final success = await AdManager().showRewardedAd(
       adType,
@@ -106,6 +109,8 @@ class BridgeService {
       },
       onAdClosed: () {
         debugPrint('[Bridge] Ad closed');
+        // 광고 종료 후 게임 resume
+        _resumeGame();
       },
     );
 
@@ -220,6 +225,34 @@ class BridgeService {
     final score = payload['score'] as String?;
     debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
     return {'success': false, 'submitted': false};
+  }
+
+  /// 게임 pause (광고 표시 전)
+  Future<void> _pauseGame() async {
+    try {
+      await webViewController.runJavaScript('''
+        if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          window.__PIXI_APP__.ticker.stop();
+          console.log('[Flutter] Game paused for ad');
+        }
+      ''');
+    } catch (e) {
+      debugPrint('[Bridge] Failed to pause game: $e');
+    }
+  }
+
+  /// 게임 resume (광고 종료 후)
+  Future<void> _resumeGame() async {
+    try {
+      await webViewController.runJavaScript('''
+        if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
+          window.__PIXI_APP__.ticker.start();
+          console.log('[Flutter] Game resumed after ad');
+        }
+      ''');
+    } catch (e) {
+      debugPrint('[Bridge] Failed to resume game: $e');
+    }
   }
 
   /// 결과를 WebView로 전송 (CustomEvent)

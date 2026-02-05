@@ -222,6 +222,37 @@ class _WebViewPageState extends State<WebViewPage> {
     _bridgeService = BridgeService(_controller);
   }
 
+  /// 앱 종료 확인 다이얼로그
+  Future<void> _showExitConfirmDialog() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('종료'),
+          content: const Text('게임을 종료하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                '종료',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldExit == true) {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,9 +265,9 @@ class _WebViewPageState extends State<WebViewPage> {
               if (await _controller.canGoBack()) {
                 await _controller.goBack();
               } else {
-                // 더 이상 뒤로 갈 수 없으면 앱 종료 (기본 동작 수행을 위해 canPop을 활용하거나 직접 종료 제어 가능)
+                // 더 이상 뒤로 갈 수 없으면 종료 확인 다이얼로그 표시
                 if (context.mounted) {
-                  SystemNavigator.pop();
+                  await _showExitConfirmDialog();
                 }
               }
             },

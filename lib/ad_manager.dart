@@ -27,8 +27,7 @@ class AdManager {
     RewardAdType.artifact: 'ca-app-pub-2202284171552842/5443086569',
     RewardAdType.revival: 'ca-app-pub-2202284171552842/9888871680',
     RewardAdType.reroll: 'ca-app-pub-2202284171552842/9114303494',
-    // TODO: AdMob 콘솔에서 도깨비 보따리 ad unit 생성 후 교체
-    RewardAdType.bundle: 'ca-app-pub-3940256099942544/5224354917', // 테스트 ID
+    RewardAdType.bundle: 'ca-app-pub-2202284171552842/5443086569', // 유물 광고와 동일
   };
 
   // Android 광고 Unit IDs
@@ -36,8 +35,7 @@ class AdManager {
     RewardAdType.artifact: 'ca-app-pub-2202284171552842/1063890252',
     RewardAdType.revival: 'ca-app-pub-2202284171552842/4464513983',
     RewardAdType.reroll: 'ca-app-pub-2202284171552842/6886770996',
-    // TODO: AdMob 콘솔에서 도깨비 보따리 ad unit 생성 후 교체
-    RewardAdType.bundle: 'ca-app-pub-3940256099942544/5224354917', // 테스트 ID
+    RewardAdType.bundle: 'ca-app-pub-2202284171552842/1063890252', // 유물 광고와 동일
   };
 
   /// 플랫폼 및 디버그 모드에 따른 광고 ID 반환

@@ -91,10 +91,11 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// 앱 환경 정보를 WebView에 주입
   Future<void> _injectAppEnvironment() async {
-    final safeAreaTop = MediaQuery.of(context).padding.top;
-    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
-    final safeAreaLeft = MediaQuery.of(context).padding.left;
-    final safeAreaRight = MediaQuery.of(context).padding.right;
+    // viewPadding: 시스템 UI(노치, 네비게이션 바)만 고려 (키보드 제외)
+    final safeAreaTop = MediaQuery.of(context).viewPadding.top;
+    final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
+    final safeAreaLeft = MediaQuery.of(context).viewPadding.left;
+    final safeAreaRight = MediaQuery.of(context).viewPadding.right;
 
     final js =
         '''

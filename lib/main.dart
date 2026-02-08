@@ -77,7 +77,7 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   late final WebViewController _controller;
   late final BridgeService _bridgeService;
   bool _isLoading = true;
@@ -86,7 +86,30 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// 앱 생명주기 변경 → WebView 게임 pause/resume
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _bridgeService.pauseGame();
+        break;
+      case AppLifecycleState.resumed:
+        _bridgeService.resumeGame();
+        break;
+      default:
+        break;
+    }
   }
 
   /// 앱 환경 정보를 WebView에 주입

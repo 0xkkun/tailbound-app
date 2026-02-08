@@ -30,6 +30,9 @@ class BridgeService {
           case 'ad.request':
             result = await _handleAdRequest(payload);
             break;
+          case 'ad.preload':
+            result = await _handleAdPreload(payload);
+            break;
           case 'safeArea.get':
             result = await _getSafeArea();
             break;
@@ -101,7 +104,7 @@ class BridgeService {
     }
 
     // 광고 표시 전 게임 pause
-    await _pauseGame();
+    await pauseGame();
 
     bool rewarded = false;
     final success = await AdManager().showRewardedAd(
@@ -113,12 +116,41 @@ class BridgeService {
       onAdClosed: () {
         debugPrint('[Bridge] Ad closed');
         // 광고 종료 후 게임 resume
-        _resumeGame();
+        resumeGame();
       },
     );
 
     debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
     return {'success': success, 'rewarded': rewarded};
+  }
+
+  /// 광고 미리 로드 요청 처리
+  Future<Map<String, dynamic>> _handleAdPreload(
+    Map<String, dynamic> payload,
+  ) async {
+    final adTypeStr = payload['adType'] as String;
+    debugPrint('[Bridge] Ad preload request: $adTypeStr');
+
+    RewardAdType? adType;
+    switch (adTypeStr.toLowerCase()) {
+      case 'artifact':
+        adType = RewardAdType.artifact;
+        break;
+      case 'revival':
+        adType = RewardAdType.revival;
+        break;
+      case 'reroll':
+        adType = RewardAdType.reroll;
+        break;
+      case 'bundle':
+        adType = RewardAdType.bundle;
+        break;
+      default:
+        throw Exception('Unknown ad type: $adTypeStr');
+    }
+
+    await AdManager().preloadAd(adType);
+    return {'success': true};
   }
 
   /// Safe Area 조회
@@ -231,8 +263,8 @@ class BridgeService {
     return {'success': false, 'submitted': false};
   }
 
-  /// 게임 pause (광고 표시 전)
-  Future<void> _pauseGame() async {
+  /// 게임 pause (광고 표시 전 / 앱 백그라운드 전환 시)
+  Future<void> pauseGame() async {
     try {
       await webViewController.runJavaScript('''
         if (window.__GAME_PAUSE__) {
@@ -249,8 +281,8 @@ class BridgeService {
     }
   }
 
-  /// 게임 resume (광고 종료 후)
-  Future<void> _resumeGame() async {
+  /// 게임 resume (광고 종료 후 / 앱 포그라운드 복귀 시)
+  Future<void> resumeGame() async {
     try {
       await webViewController.runJavaScript('''
         if (window.__GAME_RESUME__) {

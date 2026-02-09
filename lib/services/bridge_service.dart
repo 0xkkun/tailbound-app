@@ -190,7 +190,7 @@ class BridgeService {
 
     debugPrint('[Bridge] Storage get: $key = $value');
 
-    return {'value': value};
+    return {'success': true, 'value': value};
   }
 
   /// 로컬 스토리지 삭제

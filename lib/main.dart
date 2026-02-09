@@ -170,6 +170,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 _errorMessage = null;
               });
             }
+            // JS 실행 전에 __APP_ENV__ 주입 (싱글톤 초기화보다 먼저)
+            _injectAppEnvironment();
           },
           onPageFinished: (String url) async {
             if (mounted) {
@@ -177,7 +179,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 _isLoading = false;
               });
 
-              // 앱 환경 정보 주입
+              // safe area는 layout 완료 후 정확한 값으로 재주입
               await _injectAppEnvironment();
             }
           },

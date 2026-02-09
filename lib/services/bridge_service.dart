@@ -42,6 +42,9 @@ class BridgeService {
           case 'storage.get':
             result = await _getStorage(payload);
             break;
+          case 'storage.remove':
+            result = await _removeStorage(payload);
+            break;
           case 'haptic.impact':
             result = await _triggerHaptic(payload);
             break;
@@ -188,6 +191,18 @@ class BridgeService {
     debugPrint('[Bridge] Storage get: $key = $value');
 
     return {'value': value};
+  }
+
+  /// 로컬 스토리지 삭제
+  Future<Map<String, dynamic>> _removeStorage(Map<String, dynamic> payload) async {
+    final key = payload['key'] as String;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+
+    debugPrint('[Bridge] Storage remove: $key');
+
+    return {'success': true};
   }
 
   /// 햅틱 피드백

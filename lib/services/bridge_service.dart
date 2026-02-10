@@ -158,13 +158,41 @@ class BridgeService {
     return {'value': value};
   }
 
-  /// 햅틱 피드백
+  /// 햅틱 피드백 (7종 + 레거시 3종 호환)
   Future<Map<String, dynamic>> _triggerHaptic(
     Map<String, dynamic> payload,
   ) async {
-    final style = payload['style'] as String;
+    final style = payload['style'] as String? ?? 'mediumImpact';
 
     switch (style) {
+      case 'selectionClick':
+        await HapticFeedback.selectionClick();
+        break;
+      case 'lightImpact':
+        await HapticFeedback.lightImpact();
+        break;
+      case 'mediumImpact':
+        await HapticFeedback.mediumImpact();
+        break;
+      case 'heavyImpact':
+        await HapticFeedback.heavyImpact();
+        break;
+      case 'notificationSuccess':
+        await HapticFeedback.mediumImpact();
+        await Future.delayed(const Duration(milliseconds: 100));
+        await HapticFeedback.heavyImpact();
+        break;
+      case 'notificationWarning':
+        await HapticFeedback.heavyImpact();
+        await Future.delayed(const Duration(milliseconds: 80));
+        await HapticFeedback.mediumImpact();
+        break;
+      case 'notificationError':
+        await HapticFeedback.heavyImpact();
+        await Future.delayed(const Duration(milliseconds: 100));
+        await HapticFeedback.heavyImpact();
+        break;
+      // 레거시 호환
       case 'light':
         await HapticFeedback.lightImpact();
         break;

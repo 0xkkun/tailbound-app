@@ -179,18 +179,12 @@ class BridgeService {
         break;
       case 'notificationSuccess':
         await HapticFeedback.mediumImpact();
-        await Future.delayed(const Duration(milliseconds: 100));
-        await HapticFeedback.heavyImpact();
         break;
       case 'notificationWarning':
         await HapticFeedback.heavyImpact();
-        await Future.delayed(const Duration(milliseconds: 80));
-        await HapticFeedback.mediumImpact();
         break;
       case 'notificationError':
-        await HapticFeedback.heavyImpact();
-        await Future.delayed(const Duration(milliseconds: 100));
-        await HapticFeedback.heavyImpact();
+        await HapticFeedback.vibrate();
         break;
       // 레거시 호환
       case 'light':

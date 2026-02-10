@@ -222,7 +222,7 @@ class _WebViewPageState extends State<WebViewPage> {
     _bridgeService = BridgeService(_controller);
   }
 
-  /// 앱 종료 확인 다이얼로그
+  /// 앱 종료 확인 다이얼로그 (전면 광고 → 종료)
   Future<void> _showExitConfirmDialog() async {
     final shouldExit = await showDialog<bool>(
       context: context,
@@ -249,6 +249,11 @@ class _WebViewPageState extends State<WebViewPage> {
     );
 
     if (shouldExit == true) {
+      // 전면 광고가 준비되어 있으면 보여주고 종료
+      final adManager = AdManager();
+      if (adManager.isInterstitialAdReady(InterstitialAdType.exitPopup)) {
+        await adManager.showInterstitialAd(InterstitialAdType.exitPopup);
+      }
       SystemNavigator.pop();
     }
   }

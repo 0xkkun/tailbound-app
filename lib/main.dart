@@ -197,18 +197,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             debugPrint('Failed URL: ${error.url}');
             debugPrint('Error type: ${error.errorType}');
             debugPrint('Error code: ${error.errorCode}');
+            debugPrint('isForMainFrame: ${error.isForMainFrame}');
 
-            // 오디오/비디오 파일 로딩 에러는 무시 (게임은 계속 진행)
-            final url = error.url?.toLowerCase() ?? '';
-            final isMediaFile =
-                url.endsWith('.mp3') ||
-                url.endsWith('.mp4') ||
-                url.endsWith('.wav') ||
-                url.endsWith('.ogg') ||
-                url.endsWith('.webm');
-
-            // 미디어 파일이 아닌 경우에만 에러 표시
-            if (!isMediaFile && mounted) {
+            // 메인 프레임 로딩 실패만 에러 표시
+            // 서브리소스(이미지, 폰트, API, 광고 SDK 등) 실패는 무시
+            if (error.isForMainFrame == true && mounted) {
               setState(() {
                 _errorMessage = '${error.description}\nURL: ${error.url}';
               });

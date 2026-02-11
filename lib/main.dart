@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_manager.dart';
+import 'l10n/app_strings.dart';
 import 'services/bridge_service.dart';
 
 // 백그라운드 메시지 핸들러
@@ -253,6 +254,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     final bannerAd = adManager.createBannerAd(BannerAdType.exitPopup);
     bannerAd.load();
 
+    final locale = View.of(context).platformDispatcher.locale.languageCode;
+    final strings = AppStrings.getExitDialog(locale);
+
     final shouldExit = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -278,9 +282,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 16),
                 // 종료 문구
-                const Text(
-                  '게임을 종료하시겠습니까?',
-                  style: TextStyle(
+                Text(
+                  strings['title']!,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -288,7 +292,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '진행 중인 게임은 저장되지 않습니다',
+                  strings['subtitle']!,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 13,
@@ -310,9 +314,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          '계속하기',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        child: Text(
+                          strings['cancel']!,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),
                     ),
@@ -327,9 +331,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          '종료',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        child: Text(
+                          strings['confirm']!,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),
                     ),

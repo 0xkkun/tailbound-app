@@ -97,11 +97,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
-
-    // MediaQuery 사용 가능해진 후 safe area를 query param으로 포함하여 URL 로드
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUrlWithSafeArea();
-    });
   }
 
   @override
@@ -148,7 +143,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         }
       };
       console.log('[Flutter] App environment injected:', window.__APP_ENV__);
-      window.dispatchEvent(new CustomEvent('appEnvReady', { detail: window.__APP_ENV__ }));
     ''';
 
     await _controller.runJavaScript(js);
@@ -178,7 +172,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (String url) async {
+          onPageStarted: (String url) {
             if (mounted) {
               setState(() {
                 _isLoading = true;
@@ -186,7 +180,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
               });
             }
             // JS 실행 전에 __APP_ENV__ 주입 (싱글톤 초기화보다 먼저)
-            await _injectAppEnvironment();
+            _injectAppEnvironment();
           },
           onPageFinished: (String url) async {
             if (mounted) {
@@ -218,6 +212,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             return NavigationDecision.navigate;
           },
         ),
+      )
+      ..loadRequest(
+        Uri.parse(
+          kDebugMode ? 'http://10.0.2.2:5173/' : 'https://tailbound.vercel.app',
+        ),
       );
 
     // Android용 WebGL 및 하드웨어 가속 설정
@@ -243,22 +242,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
     // BridgeService 초기화
     _bridgeService = BridgeService(_controller);
-  }
-
-  /// Safe area를 URL query param으로 포함하여 WebView 로드
-  void _loadUrlWithSafeArea() {
-    final padding = MediaQuery.of(context).viewPadding;
-    final safeTop = padding.top.toInt();
-    final safeBottom = padding.bottom.toInt();
-
-    final baseUrl = kDebugMode
-        ? 'http://10.0.2.2:5173/'
-        : 'https://tailbound.vercel.app';
-
-    final url = '$baseUrl?safeTop=$safeTop&safeBottom=$safeBottom';
-    debugPrint('[Flutter] Loading URL with safe area: $url');
-
-    _controller.loadRequest(Uri.parse(url));
   }
 
   /// 앱 종료 확인 다이얼로그 (배너 광고 포함)

@@ -264,105 +264,107 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
     final l10n = AppLocalizations.of(context)!;
 
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 배너 광고
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 300,
-                    height: 250,
-                    child: AdWidget(ad: bannerAd),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 종료 문구
-                Text(
-                  l10n.exitDialogTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.exitDialogSubtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // 버튼
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.exitDialogCancel,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B0000),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.exitDialogConfirm,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+    try {
+      final shouldExit = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-        );
-      },
-    );
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 배너 광고
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: AdSize.mediumRectangle.width.toDouble(),
+                      height: AdSize.mediumRectangle.height.toDouble(),
+                      child: AdWidget(ad: bannerAd),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // 종료 문구
+                  Text(
+                    l10n.exitDialogTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.exitDialogSubtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // 버튼
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.exitDialogCancel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8B0000),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.exitDialogConfirm,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
 
-    bannerAd.dispose();
-
-    if (shouldExit == true) {
-      SystemNavigator.pop();
+      if (shouldExit == true) {
+        SystemNavigator.pop();
+      }
+    } finally {
+      bannerAd.dispose();
     }
   }
 
@@ -401,7 +403,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error loading page',
+                      AppLocalizations.of(context)?.errorLoadingPage ??
+                          'Error loading page',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
@@ -418,7 +421,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                         });
                         _controller.reload();
                       },
-                      child: const Text('Retry'),
+                      child: Text(
+                        AppLocalizations.of(context)?.errorRetry ?? 'Retry',
+                      ),
                     ),
                   ],
                 ),

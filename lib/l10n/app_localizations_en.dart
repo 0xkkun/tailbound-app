@@ -19,4 +19,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exitDialogConfirm => 'Quit';
+
+  @override
+  String get errorLoadingPage => 'Failed to load page';
+
+  @override
+  String get errorRetry => 'Retry';
 }

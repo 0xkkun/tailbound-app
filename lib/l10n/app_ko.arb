@@ -1,7 +1,27 @@
 {
   "@@locale": "ko",
   "exitDialogTitle": "정말 종료하시나요?",
+  "@exitDialogTitle": {
+    "description": "앱 종료 확인 다이얼로그 제목"
+  },
   "exitDialogSubtitle": "다음에 또 오실 때까지 기다릴게요!",
+  "@exitDialogSubtitle": {
+    "description": "앱 종료 확인 다이얼로그 부제목"
+  },
   "exitDialogCancel": "계속하기",
-  "exitDialogConfirm": "종료"
+  "@exitDialogCancel": {
+    "description": "종료 취소 버튼"
+  },
+  "exitDialogConfirm": "종료",
+  "@exitDialogConfirm": {
+    "description": "종료 확인 버튼"
+  },
+  "errorLoadingPage": "페이지 로딩 실패",
+  "@errorLoadingPage": {
+    "description": "WebView 페이지 로딩 실패 메시지"
+  },
+  "errorRetry": "다시 시도",
+  "@errorRetry": {
+    "description": "재시도 버튼"
+  }
 }

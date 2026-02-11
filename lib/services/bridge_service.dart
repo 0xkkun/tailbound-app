@@ -84,23 +84,8 @@ class BridgeService {
     final adTypeStr = payload['adType'] as String;
     debugPrint('[Bridge] Ad request: $adTypeStr');
 
-    RewardAdType? adType;
-    switch (adTypeStr.toLowerCase()) {
-      case 'artifact':
-        adType = RewardAdType.artifact;
-        break;
-      case 'revival':
-        adType = RewardAdType.revival;
-        break;
-      case 'reroll':
-        adType = RewardAdType.reroll;
-        break;
-      case 'bundle':
-        adType = RewardAdType.bundle;
-        break;
-      default:
-        throw Exception('Unknown ad type: $adTypeStr');
-    }
+    final adType = AdManager.parseRewardAdType(adTypeStr);
+    if (adType == null) throw Exception('Unknown ad type: $adTypeStr');
 
     if (!AdManager().isAdReady(adType)) {
       throw Exception('Ad not ready: $adTypeStr');
@@ -134,23 +119,8 @@ class BridgeService {
     final adTypeStr = payload['adType'] as String;
     debugPrint('[Bridge] Ad preload request: $adTypeStr');
 
-    RewardAdType? adType;
-    switch (adTypeStr.toLowerCase()) {
-      case 'artifact':
-        adType = RewardAdType.artifact;
-        break;
-      case 'revival':
-        adType = RewardAdType.revival;
-        break;
-      case 'reroll':
-        adType = RewardAdType.reroll;
-        break;
-      case 'bundle':
-        adType = RewardAdType.bundle;
-        break;
-      default:
-        throw Exception('Unknown ad type: $adTypeStr');
-    }
+    final adType = AdManager.parseRewardAdType(adTypeStr);
+    if (adType == null) throw Exception('Unknown ad type: $adTypeStr');
 
     await AdManager().preloadAd(adType);
     return {'success': true};
@@ -227,13 +197,13 @@ class BridgeService {
         await HapticFeedback.heavyImpact();
         break;
       case 'notificationSuccess':
-        await HapticFeedback.mediumImpact();
+        await HapticFeedback.lightImpact();
         break;
       case 'notificationWarning':
-        await HapticFeedback.heavyImpact();
+        await HapticFeedback.mediumImpact();
         break;
       case 'notificationError':
-        await HapticFeedback.vibrate();
+        await HapticFeedback.heavyImpact();
         break;
       // 레거시 호환
       case 'light':

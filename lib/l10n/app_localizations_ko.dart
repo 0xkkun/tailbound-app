@@ -19,4 +19,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get exitDialogConfirm => '종료';
+
+  @override
+  String get errorLoadingPage => '페이지 로딩 실패';
+
+  @override
+  String get errorRetry => '다시 시도';
 }

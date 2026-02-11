@@ -98,29 +98,41 @@ abstract class AppLocalizations {
     Locale('ko'),
   ];
 
-  /// No description provided for @exitDialogTitle.
+  /// 앱 종료 확인 다이얼로그 제목
   ///
   /// In ko, this message translates to:
   /// **'정말 종료하시나요?'**
   String get exitDialogTitle;
 
-  /// No description provided for @exitDialogSubtitle.
+  /// 앱 종료 확인 다이얼로그 부제목
   ///
   /// In ko, this message translates to:
   /// **'다음에 또 오실 때까지 기다릴게요!'**
   String get exitDialogSubtitle;
 
-  /// No description provided for @exitDialogCancel.
+  /// 종료 취소 버튼
   ///
   /// In ko, this message translates to:
   /// **'계속하기'**
   String get exitDialogCancel;
 
-  /// No description provided for @exitDialogConfirm.
+  /// 종료 확인 버튼
   ///
   /// In ko, this message translates to:
   /// **'종료'**
   String get exitDialogConfirm;
+
+  /// WebView 페이지 로딩 실패 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'페이지 로딩 실패'**
+  String get errorLoadingPage;
+
+  /// 재시도 버튼
+  ///
+  /// In ko, this message translates to:
+  /// **'다시 시도'**
+  String get errorRetry;
 }
 
 class _AppLocalizationsDelegate

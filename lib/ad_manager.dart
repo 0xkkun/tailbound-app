@@ -75,6 +75,22 @@ class AdManager {
     BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
   };
 
+  /// 문자열 → RewardAdType 파싱
+  static RewardAdType? parseRewardAdType(String typeStr) {
+    switch (typeStr.toLowerCase()) {
+      case 'artifact':
+        return RewardAdType.artifact;
+      case 'revival':
+        return RewardAdType.revival;
+      case 'reroll':
+        return RewardAdType.reroll;
+      case 'bundle':
+        return RewardAdType.bundle;
+      default:
+        return null;
+    }
+  }
+
   /// 플랫폼 및 디버그 모드에 따른 보상형 광고 ID 반환
   static String _getRewardedAdUnitId(RewardAdType type) {
     if (kDebugMode) return _testRewardedAdUnitId;

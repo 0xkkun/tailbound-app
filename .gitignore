@@ -50,3 +50,6 @@ ios/exportOptions.plist
 android/key.properties
 *.keystore
 *.jks
+android/play-store-key.json
+android/Gemfile.lock
+*.jks

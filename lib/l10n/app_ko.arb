@@ -1,0 +1,7 @@
+{
+  "@@locale": "ko",
+  "exitDialogTitle": "정말 종료하시나요?",
+  "exitDialogSubtitle": "다음에 또 오실 때까지 기다릴게요!",
+  "exitDialogCancel": "계속하기",
+  "exitDialogConfirm": "종료"
+}

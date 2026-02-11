@@ -8,8 +8,9 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'ad_manager.dart';
-import 'l10n/app_strings.dart';
+import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
 
 // 백그라운드 메시지 핸들러
@@ -62,6 +63,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tailbound',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -254,8 +262,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     final bannerAd = adManager.createBannerAd(BannerAdType.exitPopup);
     bannerAd.load();
 
-    final locale = View.of(context).platformDispatcher.locale.languageCode;
-    final strings = AppStrings.getExitDialog(locale);
+    final l10n = AppLocalizations.of(context)!;
 
     final shouldExit = await showDialog<bool>(
       context: context,
@@ -283,7 +290,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 const SizedBox(height: 16),
                 // 종료 문구
                 Text(
-                  strings['title']!,
+                  l10n.exitDialogTitle,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -292,7 +299,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  strings['subtitle']!,
+                  l10n.exitDialogSubtitle,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 13,
@@ -315,7 +322,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                           ),
                         ),
                         child: Text(
-                          strings['cancel']!,
+                          l10n.exitDialogCancel,
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),
@@ -332,7 +339,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                           ),
                         ),
                         child: Text(
-                          strings['confirm']!,
+                          l10n.exitDialogConfirm,
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),

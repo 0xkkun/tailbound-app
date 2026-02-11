@@ -247,15 +247,30 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     _bridgeService = BridgeService(_controller);
   }
 
-  /// 앱 종료 확인 다이얼로그 (전면 광고 → 종료)
+  /// 앱 종료 확인 다이얼로그 (배너 광고 포함)
   Future<void> _showExitConfirmDialog() async {
+    final adManager = AdManager();
+    final bannerAd = adManager.createBannerAd(BannerAdType.exitPopup);
+    bannerAd.load();
+
     final shouldExit = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('종료'),
-          content: const Text('게임을 종료하시겠습니까?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('게임을 종료하시겠습니까?'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: 300,
+                height: 250,
+                child: AdWidget(ad: bannerAd),
+              ),
+            ],
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -273,12 +288,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       },
     );
 
+    bannerAd.dispose();
+
     if (shouldExit == true) {
-      // 전면 광고가 준비되어 있으면 보여주고 종료
-      final adManager = AdManager();
-      if (adManager.isInterstitialAdReady(InterstitialAdType.exitPopup)) {
-        await adManager.showInterstitialAd(InterstitialAdType.exitPopup);
-      }
       SystemNavigator.pop();
     }
   }

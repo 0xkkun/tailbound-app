@@ -14,8 +14,12 @@ enum RewardAdType {
 
 /// 전면 광고 타입
 enum InterstitialAdType {
-  exitPopup, // 종료 팝업
   gameInterstitial, // 게임 중 전면 광고
+}
+
+/// 배너 광고 타입
+enum BannerAdType {
+  exitPopup, // 종료 팝업 내 배너
 }
 
 /// 광고 매니저 클래스
@@ -30,6 +34,8 @@ class AdManager {
       'ca-app-pub-3940256099942544/5224354917';
   static const String _testInterstitialAdUnitId =
       'ca-app-pub-3940256099942544/1033173712';
+  static const String _testBannerAdUnitId =
+      'ca-app-pub-3940256099942544/6300978111';
 
   // iOS 광고 Unit IDs
   static const Map<RewardAdType, String> _iosAdUnitIds = {
@@ -49,7 +55,6 @@ class AdManager {
 
   // iOS 전면 광고 Unit IDs
   static const Map<InterstitialAdType, String> _iosInterstitialAdUnitIds = {
-    InterstitialAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
     InterstitialAdType.gameInterstitial:
         'ca-app-pub-2202284171552842/1084947264',
   };
@@ -57,9 +62,18 @@ class AdManager {
   // Android 전면 광고 Unit IDs (iOS와 동일 — iOS 전용 앱이므로 추후 분리)
   static const Map<InterstitialAdType, String>
   _androidInterstitialAdUnitIds = {
-    InterstitialAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
     InterstitialAdType.gameInterstitial:
         'ca-app-pub-2202284171552842/1084947264',
+  };
+
+  // iOS 배너 광고 Unit IDs
+  static const Map<BannerAdType, String> _iosBannerAdUnitIds = {
+    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
+  };
+
+  // Android 배너 광고 Unit IDs
+  static const Map<BannerAdType, String> _androidBannerAdUnitIds = {
+    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
   };
 
   /// 플랫폼 및 디버그 모드에 따른 보상형 광고 ID 반환
@@ -76,6 +90,14 @@ class AdManager {
     if (Platform.isIOS) return _iosInterstitialAdUnitIds[type]!;
     if (Platform.isAndroid) return _androidInterstitialAdUnitIds[type]!;
     return _testInterstitialAdUnitId;
+  }
+
+  /// 플랫폼 및 디버그 모드에 따른 배너 광고 ID 반환
+  static String _getBannerAdUnitId(BannerAdType type) {
+    if (kDebugMode) return _testBannerAdUnitId;
+    if (Platform.isIOS) return _iosBannerAdUnitIds[type]!;
+    if (Platform.isAndroid) return _androidBannerAdUnitIds[type]!;
+    return _testBannerAdUnitId;
   }
 
   // 현재 로드된 보상형 광고
@@ -137,7 +159,6 @@ class AdManager {
       preloadAd(RewardAdType.revival),
       preloadAd(RewardAdType.reroll),
       preloadAd(RewardAdType.bundle),
-      preloadInterstitialAd(InterstitialAdType.exitPopup),
     ]);
   }
 
@@ -291,6 +312,24 @@ class AdManager {
 
     await ad.show();
     return completer.future;
+  }
+
+  /// 배너 광고 생성 (다이얼로그 등에 삽입용)
+  BannerAd createBannerAd(BannerAdType type, {AdSize size = AdSize.mediumRectangle}) {
+    return BannerAd(
+      adUnitId: _getBannerAdUnitId(type),
+      size: size,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          debugPrint('Banner ad loaded: $type');
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Failed to load banner ad: $type, error: $error');
+          ad.dispose();
+        },
+      ),
+    );
   }
 
   /// 정리

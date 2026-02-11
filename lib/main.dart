@@ -376,65 +376,69 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) async {
-              if (didPop) return;
-              if (await _controller.canGoBack()) {
-                await _controller.goBack();
-              } else {
-                // 더 이상 뒤로 갈 수 없으면 종료 확인 다이얼로그 표시
-                if (context.mounted) {
-                  await _showExitConfirmDialog();
+      body: SafeArea(
+        // 게임 Canvas가 상단까지 그려야 하므로 top은 false (웹에서 직접 처리)
+        top: false,
+        child: Stack(
+          children: [
+            PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop) return;
+                if (await _controller.canGoBack()) {
+                  await _controller.goBack();
+                } else {
+                  // 더 이상 뒤로 갈 수 없으면 종료 확인 다이얼로그 표시
+                  if (context.mounted) {
+                    await _showExitConfirmDialog();
+                  }
                 }
-              }
-            },
-            child: WebViewWidget(controller: _controller),
-          ),
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
-          if (_errorMessage != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      AppLocalizations.of(context)?.errorLoadingPage ??
-                          'Error loading page',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _errorMessage = null;
-                        });
-                        _controller.reload();
-                      },
-                      child: Text(
-                        AppLocalizations.of(context)?.errorRetry ?? 'Retry',
+              },
+              child: WebViewWidget(controller: _controller),
+            ),
+            if (_isLoading) const Center(child: CircularProgressIndicator()),
+            if (_errorMessage != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context)?.errorLoadingPage ??
+                            'Error loading page',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _errorMessage = null;
+                          });
+                          _controller.reload();
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)?.errorRetry ?? 'Retry',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

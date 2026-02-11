@@ -194,7 +194,9 @@ class BridgeService {
   }
 
   /// 로컬 스토리지 삭제
-  Future<Map<String, dynamic>> _removeStorage(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> _removeStorage(
+    Map<String, dynamic> payload,
+  ) async {
     final key = payload['key'] as String;
 
     final prefs = await SharedPreferences.getInstance();

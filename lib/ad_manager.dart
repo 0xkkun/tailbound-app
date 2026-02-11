@@ -60,8 +60,7 @@ class AdManager {
   };
 
   // Android 전면 광고 Unit IDs (iOS와 동일 — iOS 전용 앱이므로 추후 분리)
-  static const Map<InterstitialAdType, String>
-  _androidInterstitialAdUnitIds = {
+  static const Map<InterstitialAdType, String> _androidInterstitialAdUnitIds = {
     InterstitialAdType.gameInterstitial:
         'ca-app-pub-2202284171552842/1084947264',
   };
@@ -315,7 +314,10 @@ class AdManager {
   }
 
   /// 배너 광고 생성 (다이얼로그 등에 삽입용)
-  BannerAd createBannerAd(BannerAdType type, {AdSize size = AdSize.mediumRectangle}) {
+  BannerAd createBannerAd(
+    BannerAdType type, {
+    AdSize size = AdSize.mediumRectangle,
+  }) {
     return BannerAd(
       adUnitId: _getBannerAdUnitId(type),
       size: size,

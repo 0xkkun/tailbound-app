@@ -323,7 +323,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                         ),
                         child: Text(
                           l10n.exitDialogCancel,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -340,7 +343,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                         ),
                         child: Text(
                           l10n.exitDialogConfirm,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ),

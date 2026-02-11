@@ -143,6 +143,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         }
       };
       console.log('[Flutter] App environment injected:', window.__APP_ENV__);
+      window.dispatchEvent(new CustomEvent('appEnvReady', { detail: window.__APP_ENV__ }));
     ''';
 
     await _controller.runJavaScript(js);
@@ -172,7 +173,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (String url) {
+          onPageStarted: (String url) async {
             if (mounted) {
               setState(() {
                 _isLoading = true;
@@ -180,7 +181,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
               });
             }
             // JS 실행 전에 __APP_ENV__ 주입 (싱글톤 초기화보다 먼저)
-            _injectAppEnvironment();
+            await _injectAppEnvironment();
           },
           onPageFinished: (String url) async {
             if (mounted) {

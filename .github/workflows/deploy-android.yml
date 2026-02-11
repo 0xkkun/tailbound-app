@@ -1,0 +1,95 @@
+name: Deploy Android (Internal Testing)
+
+on:
+  push:
+    tags:
+      - 'v*' # v1.0.5 등 태그 푸시 시 실행
+
+  workflow_dispatch: # 수동 실행 가능
+    inputs:
+      track:
+        description: 'Play Store track'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+
+jobs:
+  deploy:
+    name: Build & Deploy to Play Store
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: android
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Keystore 복원
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
+      # Play Store JSON key 복원
+      - name: Decode Play Store JSON key
+        run: |
+          echo '${{ secrets.PLAY_STORE_JSON_KEY }}' > android/play-store-key.json
+
+      # Release AAB 빌드
+      - name: Build release AAB
+        run: flutter build appbundle --release
+
+      # Fastlane 배포
+      - name: Deploy to Play Store
+        working-directory: android
+        env:
+          PLAY_STORE_JSON_KEY_PATH: play-store-key.json
+        run: |
+          TRACK="${{ github.event.inputs.track || 'internal' }}"
+          if [ "$TRACK" = "alpha" ]; then
+            bundle exec fastlane promote_to_alpha
+          else
+            bundle exec fastlane deploy_internal
+          fi
+
+      # 정리
+      - name: Cleanup secrets
+        if: always()
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f android/play-store-key.json

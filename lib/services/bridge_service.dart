@@ -30,6 +30,9 @@ class BridgeService {
           case 'ad.request':
             result = await _handleAdRequest(payload);
             break;
+          case 'ad.preload':
+            result = await _handleAdPreload(payload);
+            break;
           case 'safeArea.get':
             result = await _getSafeArea();
             break;
@@ -38,6 +41,9 @@ class BridgeService {
             break;
           case 'storage.get':
             result = await _getStorage(payload);
+            break;
+          case 'storage.remove':
+            result = await _removeStorage(payload);
             break;
           case 'haptic.impact':
             result = await _triggerHaptic(payload);
@@ -78,30 +84,15 @@ class BridgeService {
     final adTypeStr = payload['adType'] as String;
     debugPrint('[Bridge] Ad request: $adTypeStr');
 
-    RewardAdType? adType;
-    switch (adTypeStr.toLowerCase()) {
-      case 'artifact':
-        adType = RewardAdType.artifact;
-        break;
-      case 'revival':
-        adType = RewardAdType.revival;
-        break;
-      case 'reroll':
-        adType = RewardAdType.reroll;
-        break;
-      case 'bundle':
-        adType = RewardAdType.bundle;
-        break;
-      default:
-        throw Exception('Unknown ad type: $adTypeStr');
-    }
+    final adType = AdManager.parseRewardAdType(adTypeStr);
+    if (adType == null) throw Exception('Unknown ad type: $adTypeStr');
 
     if (!AdManager().isAdReady(adType)) {
       throw Exception('Ad not ready: $adTypeStr');
     }
 
     // 광고 표시 전 게임 pause
-    await _pauseGame();
+    await pauseGame();
 
     bool rewarded = false;
     final success = await AdManager().showRewardedAd(
@@ -113,12 +104,26 @@ class BridgeService {
       onAdClosed: () {
         debugPrint('[Bridge] Ad closed');
         // 광고 종료 후 게임 resume
-        _resumeGame();
+        resumeGame();
       },
     );
 
     debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
     return {'success': success, 'rewarded': rewarded};
+  }
+
+  /// 광고 미리 로드 요청 처리
+  Future<Map<String, dynamic>> _handleAdPreload(
+    Map<String, dynamic> payload,
+  ) async {
+    final adTypeStr = payload['adType'] as String;
+    debugPrint('[Bridge] Ad preload request: $adTypeStr');
+
+    final adType = AdManager.parseRewardAdType(adTypeStr);
+    if (adType == null) throw Exception('Unknown ad type: $adTypeStr');
+
+    await AdManager().preloadAd(adType);
+    return {'success': true};
   }
 
   /// Safe Area 조회
@@ -155,16 +160,52 @@ class BridgeService {
 
     debugPrint('[Bridge] Storage get: $key = $value');
 
-    return {'value': value};
+    return {'success': true, 'value': value};
   }
 
-  /// 햅틱 피드백
+  /// 로컬 스토리지 삭제
+  Future<Map<String, dynamic>> _removeStorage(
+    Map<String, dynamic> payload,
+  ) async {
+    final key = payload['key'] as String;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+
+    debugPrint('[Bridge] Storage remove: $key');
+
+    return {'success': true};
+  }
+
+  /// 햅틱 피드백 (7종 + 레거시 3종 호환)
   Future<Map<String, dynamic>> _triggerHaptic(
     Map<String, dynamic> payload,
   ) async {
-    final style = payload['style'] as String;
+    final style = payload['style'] as String? ?? 'mediumImpact';
 
     switch (style) {
+      case 'selectionClick':
+        await HapticFeedback.selectionClick();
+        break;
+      case 'lightImpact':
+        await HapticFeedback.lightImpact();
+        break;
+      case 'mediumImpact':
+        await HapticFeedback.mediumImpact();
+        break;
+      case 'heavyImpact':
+        await HapticFeedback.heavyImpact();
+        break;
+      case 'notificationSuccess':
+        await HapticFeedback.lightImpact();
+        break;
+      case 'notificationWarning':
+        await HapticFeedback.mediumImpact();
+        break;
+      case 'notificationError':
+        await HapticFeedback.heavyImpact();
+        break;
+      // 레거시 호환
       case 'light':
         await HapticFeedback.lightImpact();
         break;
@@ -231,8 +272,8 @@ class BridgeService {
     return {'success': false, 'submitted': false};
   }
 
-  /// 게임 pause (광고 표시 전)
-  Future<void> _pauseGame() async {
+  /// 게임 pause (광고 표시 전 / 앱 백그라운드 전환 시)
+  Future<void> pauseGame() async {
     try {
       await webViewController.runJavaScript('''
         if (window.__GAME_PAUSE__) {
@@ -249,8 +290,8 @@ class BridgeService {
     }
   }
 
-  /// 게임 resume (광고 종료 후)
-  Future<void> _resumeGame() async {
+  /// 게임 resume (광고 종료 후 / 앱 포그라운드 복귀 시)
+  Future<void> resumeGame() async {
     try {
       await webViewController.runJavaScript('''
         if (window.__GAME_RESUME__) {

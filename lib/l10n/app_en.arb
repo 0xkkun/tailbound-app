@@ -1,0 +1,9 @@
+{
+  "@@locale": "en",
+  "exitDialogTitle": "Leaving so soon?",
+  "exitDialogSubtitle": "We'll be waiting for your return!",
+  "exitDialogCancel": "Continue",
+  "exitDialogConfirm": "Quit",
+  "errorLoadingPage": "Failed to load page",
+  "errorRetry": "Retry"
+}

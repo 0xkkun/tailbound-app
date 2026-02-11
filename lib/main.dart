@@ -8,7 +8,9 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'ad_manager.dart';
+import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
 
 // 백그라운드 메시지 핸들러
@@ -61,6 +63,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tailbound',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -77,7 +86,7 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   late final WebViewController _controller;
   late final BridgeService _bridgeService;
   bool _isLoading = true;
@@ -86,7 +95,30 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// 앱 생명주기 변경 → WebView 게임 pause/resume
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _bridgeService.pauseGame();
+        break;
+      case AppLifecycleState.resumed:
+        _bridgeService.resumeGame();
+        break;
+      default:
+        break;
+    }
   }
 
   /// 앱 환경 정보를 WebView에 주입
@@ -147,6 +179,8 @@ class _WebViewPageState extends State<WebViewPage> {
                 _errorMessage = null;
               });
             }
+            // JS 실행 전에 __APP_ENV__ 주입 (싱글톤 초기화보다 먼저)
+            _injectAppEnvironment();
           },
           onPageFinished: (String url) async {
             if (mounted) {
@@ -154,7 +188,7 @@ class _WebViewPageState extends State<WebViewPage> {
                 _isLoading = false;
               });
 
-              // 앱 환경 정보 주입
+              // safe area는 layout 완료 후 정확한 값으로 재주입
               await _injectAppEnvironment();
             }
           },
@@ -163,18 +197,11 @@ class _WebViewPageState extends State<WebViewPage> {
             debugPrint('Failed URL: ${error.url}');
             debugPrint('Error type: ${error.errorType}');
             debugPrint('Error code: ${error.errorCode}');
+            debugPrint('isForMainFrame: ${error.isForMainFrame}');
 
-            // 오디오/비디오 파일 로딩 에러는 무시 (게임은 계속 진행)
-            final url = error.url?.toLowerCase() ?? '';
-            final isMediaFile =
-                url.endsWith('.mp3') ||
-                url.endsWith('.mp4') ||
-                url.endsWith('.wav') ||
-                url.endsWith('.ogg') ||
-                url.endsWith('.webm');
-
-            // 미디어 파일이 아닌 경우에만 에러 표시
-            if (!isMediaFile && mounted) {
+            // 메인 프레임 로딩 실패만 에러 표시
+            // 서브리소스(이미지, 폰트, API, 광고 SDK 등) 실패는 무시
+            if (error.isForMainFrame == true && mounted) {
               setState(() {
                 _errorMessage = '${error.description}\nURL: ${error.url}';
               });
@@ -188,12 +215,7 @@ class _WebViewPageState extends State<WebViewPage> {
       )
       ..loadRequest(
         Uri.parse(
-          kDebugMode
-              // Android Emulator: 10.0.2.2 = localhost
-              // iOS Simulator: localhost or 127.0.0.1
-              // Real Device: Use your machine's IP (e.g., 192.168.x.x)
-              ? 'http://10.0.2.2:5173/'
-              : 'https://tailbound.vercel.app',
+          kDebugMode ? 'http://10.0.2.2:5173/' : 'https://tailbound.vercel.app',
         ),
       );
 
@@ -222,96 +244,184 @@ class _WebViewPageState extends State<WebViewPage> {
     _bridgeService = BridgeService(_controller);
   }
 
-  /// 앱 종료 확인 다이얼로그
+  /// 앱 종료 확인 다이얼로그 (배너 광고 포함)
   Future<void> _showExitConfirmDialog() async {
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('종료'),
-          content: const Text('게임을 종료하시겠습니까?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+    final adManager = AdManager();
+    final bannerAd = adManager.createBannerAd(BannerAdType.exitPopup);
+    bannerAd.load();
+
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final shouldExit = await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                '종료',
-                style: TextStyle(color: Colors.red),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 배너 광고
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: AdSize.mediumRectangle.width.toDouble(),
+                      height: AdSize.mediumRectangle.height.toDouble(),
+                      child: AdWidget(ad: bannerAd),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // 종료 문구
+                  Text(
+                    l10n.exitDialogTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.exitDialogSubtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // 버튼
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.exitDialogCancel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8B0000),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            l10n.exitDialogConfirm,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        );
-      },
-    );
+          );
+        },
+      );
 
-    if (shouldExit == true) {
-      SystemNavigator.pop();
+      if (shouldExit == true) {
+        SystemNavigator.pop();
+      }
+    } finally {
+      bannerAd.dispose();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) async {
-              if (didPop) return;
-              if (await _controller.canGoBack()) {
-                await _controller.goBack();
-              } else {
-                // 더 이상 뒤로 갈 수 없으면 종료 확인 다이얼로그 표시
-                if (context.mounted) {
-                  await _showExitConfirmDialog();
+      body: SafeArea(
+        // 게임 Canvas가 상단까지 그려야 하므로 top은 false (웹에서 직접 처리)
+        top: false,
+        child: Stack(
+          children: [
+            PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop) return;
+                if (await _controller.canGoBack()) {
+                  await _controller.goBack();
+                } else {
+                  // 더 이상 뒤로 갈 수 없으면 종료 확인 다이얼로그 표시
+                  if (context.mounted) {
+                    await _showExitConfirmDialog();
+                  }
                 }
-              }
-            },
-            child: WebViewWidget(controller: _controller),
-          ),
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
-          if (_errorMessage != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading page',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _errorMessage = null;
-                        });
-                        _controller.reload();
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
+              },
+              child: WebViewWidget(controller: _controller),
+            ),
+            if (_isLoading) const Center(child: CircularProgressIndicator()),
+            if (_errorMessage != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context)?.errorLoadingPage ??
+                            'Error loading page',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _errorMessage = null;
+                          });
+                          _controller.reload();
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)?.errorRetry ?? 'Retry',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

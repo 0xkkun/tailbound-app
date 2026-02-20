@@ -133,6 +133,42 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'다시 시도'**
   String get errorRetry;
+
+  /// 복귀 알림 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'무녀가 기다리고 있어요'**
+  String get notificationReturnTitle;
+
+  /// 복귀 알림 본문
+  ///
+  /// In ko, this message translates to:
+  /// **'귀문이 다시 열리고 있어요. 돌아와서 막아주세요!'**
+  String get notificationReturnBody;
+
+  /// 데일리 알림 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'오늘의 도전이 기다립니다'**
+  String get notificationDailyTitle;
+
+  /// 데일리 알림 본문
+  ///
+  /// In ko, this message translates to:
+  /// **'설화 속 세계가 당신을 부르고 있어요.'**
+  String get notificationDailyBody;
+
+  /// 장기이탈 알림 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'저승사자가 부르고 있어요'**
+  String get notificationInactiveTitle;
+
+  /// 장기이탈 알림 본문
+  ///
+  /// In ko, this message translates to:
+  /// **'오래 비웠더니 귀문이 더 강해졌어요. 돌아올 때가 됐어요!'**
+  String get notificationInactiveBody;
 }
 
 class _AppLocalizationsDelegate

@@ -25,4 +25,22 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get errorRetry => '다시 시도';
+
+  @override
+  String get notificationReturnTitle => '무녀가 기다리고 있어요';
+
+  @override
+  String get notificationReturnBody => '귀문이 다시 열리고 있어요. 돌아와서 막아주세요!';
+
+  @override
+  String get notificationDailyTitle => '오늘의 도전이 기다립니다';
+
+  @override
+  String get notificationDailyBody => '설화 속 세계가 당신을 부르고 있어요.';
+
+  @override
+  String get notificationInactiveTitle => '저승사자가 부르고 있어요';
+
+  @override
+  String get notificationInactiveBody => '오래 비웠더니 귀문이 더 강해졌어요. 돌아올 때가 됐어요!';
 }

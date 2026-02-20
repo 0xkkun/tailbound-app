@@ -25,4 +25,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorRetry => 'Retry';
+
+  @override
+  String get notificationReturnTitle => 'The Shaman awaits your return';
+
+  @override
+  String get notificationReturnBody =>
+      'The Demon Gate is opening again. Come back and hold the line!';
+
+  @override
+  String get notificationDailyTitle => 'Today\'s challenge awaits';
+
+  @override
+  String get notificationDailyBody => 'The world of Seolhwa is calling you.';
+
+  @override
+  String get notificationInactiveTitle => 'Death\'s Envoy is calling';
+
+  @override
+  String get notificationInactiveBody =>
+      'The Demon Gate grew stronger while you were away. Time to return!';
 }

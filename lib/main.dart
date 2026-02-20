@@ -12,6 +12,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'ad_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
+import 'services/notification_service.dart';
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -44,6 +45,11 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization skipped: $e');
   }
+
+  // 로컬 알림 초기화
+  await NotificationService.instance.initialize();
+  await NotificationService.instance.requestPermission();
+  debugPrint('NotificationService initialized');
 
   // AdMob 초기화
   await MobileAds.instance.initialize();
@@ -105,16 +111,33 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// 앱 생명주기 변경 → WebView 게임 pause/resume
+  /// 앱 생명주기 변경 → WebView 게임 pause/resume + 알림 스케줄링
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    final l10n = AppLocalizations.of(context);
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
         _bridgeService.pauseGame();
+        // 앱 이탈 시 복귀 알림 + 장기이탈 알림 스케줄
+        if (l10n != null) {
+          NotificationService.instance.scheduleReturnReminder(
+            hours: 4,
+            title: l10n.notificationReturnTitle,
+            body: l10n.notificationReturnBody,
+          );
+          NotificationService.instance.scheduleInactiveReminder(
+            hours: 24,
+            title: l10n.notificationInactiveTitle,
+            body: l10n.notificationInactiveBody,
+          );
+        }
         break;
       case AppLifecycleState.resumed:
         _bridgeService.resumeGame();
+        // 앱 복귀 시 복귀/장기이탈 알림 취소
+        NotificationService.instance.cancelReturnReminder();
+        NotificationService.instance.cancelInactiveReminder();
         break;
       default:
         break;

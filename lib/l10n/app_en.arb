@@ -5,5 +5,11 @@
   "exitDialogCancel": "Continue",
   "exitDialogConfirm": "Quit",
   "errorLoadingPage": "Failed to load page",
-  "errorRetry": "Retry"
+  "errorRetry": "Retry",
+  "notificationReturnTitle": "The Shaman awaits your return",
+  "notificationReturnBody": "The Demon Gate is opening again. Come back and hold the line!",
+  "notificationDailyTitle": "Today's challenge awaits",
+  "notificationDailyBody": "The world of Seolhwa is calling you.",
+  "notificationInactiveTitle": "Death's Envoy is calling",
+  "notificationInactiveBody": "The Demon Gate grew stronger while you were away. Time to return!"
 }

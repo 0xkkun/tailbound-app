@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ad_manager.dart';
+import 'notification_service.dart';
 
 /// Flutter Bridge Service
 /// 웹 게임과 네이티브 기능 간의 통합 브리지
@@ -62,6 +63,12 @@ class BridgeService {
             break;
           case 'gameCenter.submitScore':
             result = await _handleGameCenterSubmitScore(payload);
+            break;
+          case 'notification.scheduleDailyReminder':
+            result = await _handleScheduleDailyReminder(payload);
+            break;
+          case 'notification.cancelAll':
+            result = await _handleCancelAllNotifications();
             break;
           default:
             throw Exception('Unknown command: $type');
@@ -270,6 +277,31 @@ class BridgeService {
     final score = payload['score'] as String?;
     debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
     return {'success': false, 'submitted': false};
+  }
+
+  /// 데일리 알림 스케줄
+  Future<Map<String, dynamic>> _handleScheduleDailyReminder(
+    Map<String, dynamic> payload,
+  ) async {
+    final hour = payload['hour'] as int? ?? 20;
+    final minute = payload['minute'] as int? ?? 0;
+    final title = payload['title'] as String? ?? '오늘의 도전이 기다립니다';
+    final body = payload['body'] as String? ?? '설화 속 세계가 당신을 부르고 있어요.';
+
+    await NotificationService.instance.scheduleDailyReminder(
+      hour: hour,
+      minute: minute,
+      title: title,
+      body: body,
+    );
+
+    return {'success': true};
+  }
+
+  /// 모든 알림 취소
+  Future<Map<String, dynamic>> _handleCancelAllNotifications() async {
+    await NotificationService.instance.cancelAll();
+    return {'success': true};
   }
 
   /// 게임 pause (광고 표시 전 / 앱 백그라운드 전환 시)

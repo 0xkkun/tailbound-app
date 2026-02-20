@@ -103,6 +103,23 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
+    // 데일리 알림은 첫 프레임 후 context 있을 때 스케줄
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleDailyNotification();
+    });
+  }
+
+  /// 데일리 알림 기본 스케줄 (매일 20시)
+  void _scheduleDailyNotification() {
+    final l10n = AppLocalizations.of(context);
+    if (l10n != null) {
+      NotificationService.instance.scheduleDailyReminder(
+        hour: 20,
+        minute: 0,
+        title: l10n.notificationDailyTitle,
+        body: l10n.notificationDailyBody,
+      );
+    }
   }
 
   @override

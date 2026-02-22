@@ -108,6 +108,8 @@ class AdManager {
   }
 
   /// 플랫폼 및 디버그 모드에 따른 배너 광고 ID 반환
+  static String getBannerAdUnitId(BannerAdType type) => _getBannerAdUnitId(type);
+
   static String _getBannerAdUnitId(BannerAdType type) {
     if (kDebugMode) return _testBannerAdUnitId;
     if (Platform.isIOS) return _iosBannerAdUnitIds[type]!;

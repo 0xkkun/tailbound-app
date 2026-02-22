@@ -1,0 +1,9 @@
+{
+  "@@locale": "zh",
+  "exitDialogTitle": "确定要退出吗？",
+  "exitDialogSubtitle": "我们会等你回来的！",
+  "exitDialogCancel": "继续",
+  "exitDialogConfirm": "退出",
+  "errorLoadingPage": "页面加载失败",
+  "errorRetry": "重试"
+}

@@ -1,0 +1,9 @@
+{
+  "@@locale": "ja",
+  "exitDialogTitle": "本当に終了しますか？",
+  "exitDialogSubtitle": "またのお越しをお待ちしています！",
+  "exitDialogCancel": "続ける",
+  "exitDialogConfirm": "終了",
+  "errorLoadingPage": "ページの読み込みに失敗しました",
+  "errorRetry": "再試行"
+}

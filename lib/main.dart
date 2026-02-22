@@ -91,16 +91,41 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   late final BridgeService _bridgeService;
   bool _isLoading = true;
   String? _errorMessage;
+  BannerAd? _exitBannerAd;
+  bool _exitBannerReady = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeWebView();
+    _preloadExitBannerAd();
+  }
+
+  void _preloadExitBannerAd() {
+    final adManager = AdManager();
+    _exitBannerAd = BannerAd(
+      adUnitId: AdManager.getBannerAdUnitId(BannerAdType.exitPopup),
+      size: AdSize.mediumRectangle,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          debugPrint('Exit banner ad preloaded');
+          if (mounted) setState(() => _exitBannerReady = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Exit banner ad failed to preload: $error');
+          ad.dispose();
+          _exitBannerAd = null;
+        },
+      ),
+    );
+    _exitBannerAd!.load();
   }
 
   @override
   void dispose() {
+    _exitBannerAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -246,10 +271,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// 앱 종료 확인 다이얼로그 (배너 광고 포함)
   Future<void> _showExitConfirmDialog() async {
-    final adManager = AdManager();
-    final bannerAd = adManager.createBannerAd(BannerAdType.exitPopup);
-    bannerAd.load();
-
     final l10n = AppLocalizations.of(context)!;
 
     try {
@@ -267,16 +288,18 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 배너 광고
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: AdSize.mediumRectangle.width.toDouble(),
-                      height: AdSize.mediumRectangle.height.toDouble(),
-                      child: AdWidget(ad: bannerAd),
+                  // 배너 광고 (프리로드 완료 시에만 표시)
+                  if (_exitBannerReady && _exitBannerAd != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: AdSize.mediumRectangle.width.toDouble(),
+                        height: AdSize.mediumRectangle.height.toDouble(),
+                        child: AdWidget(ad: _exitBannerAd!),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                  if (_exitBannerReady && _exitBannerAd != null)
+                    const SizedBox(height: 16),
                   // 종료 문구
                   Text(
                     l10n.exitDialogTitle,
@@ -351,8 +374,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       if (shouldExit == true) {
         SystemNavigator.pop();
       }
-    } finally {
-      bannerAd.dispose();
+    } catch (e) {
+      debugPrint('Exit dialog error: $e');
     }
   }
 

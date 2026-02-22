@@ -103,7 +103,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   void _preloadExitBannerAd() {
-    final adManager = AdManager();
     _exitBannerAd = BannerAd(
       adUnitId: AdManager.getBannerAdUnitId(BannerAdType.exitPopup),
       size: AdSize.mediumRectangle,

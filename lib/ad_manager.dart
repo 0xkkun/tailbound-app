@@ -67,12 +67,12 @@ class AdManager {
 
   // iOS 배너 광고 Unit IDs
   static const Map<BannerAdType, String> _iosBannerAdUnitIds = {
-    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
+    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/2577072465',
   };
 
   // Android 배너 광고 Unit IDs
   static const Map<BannerAdType, String> _androidBannerAdUnitIds = {
-    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/6169016891',
+    BannerAdType.exitPopup: 'ca-app-pub-2202284171552842/2577072465',
   };
 
   /// 문자열 → RewardAdType 파싱

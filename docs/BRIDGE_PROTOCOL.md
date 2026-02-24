@@ -101,6 +101,11 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 | `key` | `string` | 저장 키 |
 | `value` | `string` | 저장 값 (문자열만) |
 
+**응답 data:**
+```json
+{ "success": true }
+```
+
 #### `storage.get` — 조회
 
 | 필드 | 타입 | 설명 |
@@ -119,6 +124,11 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 |------|------|------|
 | `key` | `string` | 삭제할 키 |
 
+**응답 data:**
+```json
+{ "success": true }
+```
+
 ---
 
 ### 디바이스
@@ -135,6 +145,11 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 > 참고: 정확한 값은 앱 시작 시 `window.__APP_ENV__.safeArea`로 자동 주입됨. 이 커맨드는 fallback용.
 
 #### `haptic.impact` — 햅틱 피드백
+
+**응답 data:**
+```json
+{ "success": true }
+```
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
@@ -160,6 +175,11 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 | `url` | `string` | 공유할 URL |
 | `title` | `string?` | 공유 텍스트 제목 (선택) |
 
+**응답 data:**
+```json
+{ "success": true }
+```
+
 ---
 
 ### 애널리틱스 (더미)
@@ -172,11 +192,21 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 |------|------|------|
 | `params` | `object?` | 이벤트 파라미터 |
 
+**응답 data:**
+```json
+{ "success": true }
+```
+
 #### `analytics.impression` — 노출 이벤트
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `params` | `object?` | 이벤트 파라미터 |
+
+**응답 data:**
+```json
+{ "success": true }
+```
 
 ---
 
@@ -188,11 +218,21 @@ SharedPreferences 기반. 앱 삭제 시 초기화됨.
 
 페이로드 없음.
 
+**응답 data:**
+```json
+{ "success": false }
+```
+
 #### `gameCenter.submitScore`
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `score` | `string` | 제출할 점수 |
+| `score` | `string?` | 제출할 점수 (nullable) |
+
+**응답 data:**
+```json
+{ "success": false, "submitted": false }
+```
 
 ---
 

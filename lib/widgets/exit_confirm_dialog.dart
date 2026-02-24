@@ -13,6 +13,7 @@ class ExitConfirmDialog extends StatefulWidget {
 class _ExitConfirmDialogState extends State<ExitConfirmDialog> {
   BannerAd? _bannerAd;
   bool _bannerReady = false;
+  bool _disposed = false;
   int _retryCount = 0;
   static const int _maxRetries = 3;
 
@@ -23,6 +24,7 @@ class _ExitConfirmDialogState extends State<ExitConfirmDialog> {
   }
 
   void _loadBannerAd() {
+    if (_disposed || !mounted) return;
     _bannerAd = BannerAd(
       adUnitId: AdManager.getBannerAdUnitId(BannerAdType.exitPopup),
       size: AdSize.mediumRectangle,
@@ -50,6 +52,7 @@ class _ExitConfirmDialogState extends State<ExitConfirmDialog> {
 
   @override
   void dispose() {
+    _disposed = true;
     _bannerAd?.dispose();
     _bannerAd = null;
     super.dispose();

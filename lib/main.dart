@@ -96,7 +96,7 @@ class WebViewPage extends StatefulWidget {
 
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   late final WebViewController _controller;
-  late final BridgeService _bridgeService;
+  BridgeService? _bridgeService;
   String _appVersion = '1.0.0';
   bool _isLoading = true;
   String? _errorMessage;
@@ -114,6 +114,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('PackageInfo failed: $e');
     }
+    if (!mounted) return;
     _initializeWebView();
   }
 
@@ -129,10 +130,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
-        _bridgeService.pauseGame();
+        _bridgeService?.pauseGame();
         break;
       case AppLifecycleState.resumed:
-        _bridgeService.resumeGame();
+        _bridgeService?.resumeGame();
         break;
       default:
         break;
@@ -185,7 +186,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       ..addJavaScriptChannel(
         'FlutterBridge',
         onMessageReceived: (JavaScriptMessage message) {
-          _bridgeService.handleMessage(message.message);
+          _bridgeService?.handleMessage(message.message);
         },
       )
       ..setNavigationDelegate(

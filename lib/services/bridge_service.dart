@@ -331,7 +331,9 @@ class BridgeService {
         .replaceAll('\\', '\\\\')
         .replaceAll("'", "\\'")
         .replaceAll('\n', '\\n')
-        .replaceAll('\r', '\\r');
+        .replaceAll('\r', '\\r')
+        .replaceAll('\u2028', '\\u2028')
+        .replaceAll('\u2029', '\\u2029');
     final js =
         """
       window.dispatchEvent(new CustomEvent('flutterBridgeResult', {

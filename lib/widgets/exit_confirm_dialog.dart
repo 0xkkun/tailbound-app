@@ -51,6 +51,7 @@ class _ExitConfirmDialogState extends State<ExitConfirmDialog> {
   @override
   void dispose() {
     _bannerAd?.dispose();
+    _bannerAd = null;
     super.dispose();
   }
 

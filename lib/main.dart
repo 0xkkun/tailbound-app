@@ -104,9 +104,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    PackageInfo.fromPlatform().then((info) {
+    _initAsync();
+  }
+
+  Future<void> _initAsync() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
       _appVersion = '${info.version}+${info.buildNumber}';
-    });
+    } catch (e) {
+      debugPrint('PackageInfo failed: $e');
+    }
     _initializeWebView();
   }
 

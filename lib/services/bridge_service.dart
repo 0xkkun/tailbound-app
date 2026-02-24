@@ -332,7 +332,8 @@ class BridgeService {
         .replaceAll("'", "\\'")
         .replaceAll('\n', '\\n')
         .replaceAll('\r', '\\r');
-    final js = """
+    final js =
+        """
       window.dispatchEvent(new CustomEvent('flutterBridgeResult', {
         detail: JSON.parse('$escaped')
       }));

@@ -9,9 +9,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'ad_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
+import 'widgets/exit_confirm_dialog.dart';
+
+/// 디버그 모드에서 사용할 URL (--dart-define=DEBUG_URL=... 로 오버라이드 가능)
+const debugUrl = String.fromEnvironment(
+  'DEBUG_URL',
+  defaultValue: 'http://localhost:5173/',
+);
 
 // 백그라운드 메시지 핸들러
 @pragma('vm:entry-point')
@@ -89,42 +97,21 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   late final WebViewController _controller;
   late final BridgeService _bridgeService;
+  String _appVersion = '1.0.0';
   bool _isLoading = true;
   String? _errorMessage;
-  BannerAd? _exitBannerAd;
-  bool _exitBannerReady = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    PackageInfo.fromPlatform().then((info) {
+      _appVersion = '${info.version}+${info.buildNumber}';
+    });
     _initializeWebView();
-    _preloadExitBannerAd();
-  }
-
-  void _preloadExitBannerAd() {
-    _exitBannerAd = BannerAd(
-      adUnitId: AdManager.getBannerAdUnitId(BannerAdType.exitPopup),
-      size: AdSize.mediumRectangle,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          debugPrint('Exit banner ad preloaded');
-          if (mounted) setState(() => _exitBannerReady = true);
-        },
-        onAdFailedToLoad: (ad, error) {
-          debugPrint('Exit banner ad failed to preload: $error');
-          ad.dispose();
-          _exitBannerAd = null;
-        },
-      ),
-    );
-    _exitBannerAd!.load();
   }
 
   @override
   void dispose() {
-    _exitBannerAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -158,7 +145,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       window.__APP_ENV__ = {
         platform: 'flutter',
         os: '${Platform.isIOS ? 'ios' : 'android'}',
-        version: '1.0.0',
+        version: '$_appVersion',
         safeArea: {
           top: $safeAreaTop,
           bottom: $safeAreaBottom,
@@ -238,9 +225,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         ),
       )
       ..loadRequest(
-        Uri.parse(
-          kDebugMode ? 'http://10.0.2.2:5173/' : 'https://tailbound.vercel.app',
-        ),
+        Uri.parse(kDebugMode ? debugUrl : 'https://tailbound.vercel.app'),
       );
 
     // Android용 WebGL 및 하드웨어 가속 설정
@@ -270,103 +255,12 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// 앱 종료 확인 다이얼로그 (배너 광고 포함)
   Future<void> _showExitConfirmDialog() async {
-    final l10n = AppLocalizations.of(context)!;
-
     try {
       final shouldExit = await showDialog<bool>(
         context: context,
         barrierDismissible: true,
         builder: (BuildContext context) {
-          return Dialog(
-            backgroundColor: const Color(0xFF1A1A2E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 배너 광고 (프리로드 완료 시에만 표시)
-                  if (_exitBannerReady && _exitBannerAd != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: AdSize.mediumRectangle.width.toDouble(),
-                        height: AdSize.mediumRectangle.height.toDouble(),
-                        child: AdWidget(ad: _exitBannerAd!),
-                      ),
-                    ),
-                  if (_exitBannerReady && _exitBannerAd != null)
-                    const SizedBox(height: 16),
-                  // 종료 문구
-                  Text(
-                    l10n.exitDialogTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.exitDialogSubtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // 버튼
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            l10n.exitDialogCancel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF8B0000),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            l10n.exitDialogConfirm,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
+          return const ExitConfirmDialog();
         },
       );
 

@@ -326,12 +326,17 @@ class BridgeService {
     };
 
     final resultJson = jsonEncode(result);
-    final js =
-        '''
+    // JS string literal 안에서 안전하게 전달하기 위해 이스케이프
+    final escaped = resultJson
+        .replaceAll('\\', '\\\\')
+        .replaceAll("'", "\\'")
+        .replaceAll('\n', '\\n')
+        .replaceAll('\r', '\\r');
+    final js = """
       window.dispatchEvent(new CustomEvent('flutterBridgeResult', {
-        detail: $resultJson
+        detail: JSON.parse('$escaped')
       }));
-    ''';
+    """;
 
     await webViewController.runJavaScript(js);
     debugPrint('[Bridge] Result sent: $type (success: $success)');

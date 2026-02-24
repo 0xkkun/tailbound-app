@@ -326,12 +326,11 @@ class BridgeService {
     };
 
     final resultJson = jsonEncode(result);
+    // jsonEncode를 두 번 호출하여 JS string literal로 안전하게 전달
+    // 첫 번째: Object → JSON string, 두 번째: JSON string → JS string literal
+    final jsStringLiteral = jsonEncode(resultJson);
     final js =
-        '''
-      window.dispatchEvent(new CustomEvent('flutterBridgeResult', {
-        detail: $resultJson
-      }));
-    ''';
+        'window.dispatchEvent(new CustomEvent(\'flutterBridgeResult\', { detail: JSON.parse($jsStringLiteral) }));';
 
     await webViewController.runJavaScript(js);
     debugPrint('[Bridge] Result sent: $type (success: $success)');

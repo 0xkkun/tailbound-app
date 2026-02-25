@@ -283,11 +283,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        // 게임 Canvas가 전체 영역을 사용하므로 top/bottom 모두 false (웹에서 직접 처리)
+        // 게임 Canvas가 상단까지 그려야 하므로 top은 false (웹에서 직접 처리)
         top: false,
-        bottom: false,
         child: Stack(
           children: [
             PopScope(

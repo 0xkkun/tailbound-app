@@ -130,12 +130,14 @@ class BridgeResponse {
   }
 
   /// Converts this response to a JSON-compatible map.
+  ///
+  /// Null fields ([data], [error]) are excluded from the output.
   Map<String, dynamic> toJson() => {
     'id': id,
     'type': type,
     'success': success,
-    'data': data,
-    'error': error,
+    if (data != null) 'data': data,
+    if (error != null) 'error': error,
     'timestamp': timestamp,
   };
 }

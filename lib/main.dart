@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -37,10 +38,16 @@ void main() async {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('[GlobalError] Flutter error: ${details.exceptionAsString()}');
+    try {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    } catch (_) {}
   };
 
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
     debugPrint('[GlobalError] Unhandled error: $error\n$stack');
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
     return true;
   };
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -13,6 +15,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'ad_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
+import 'services/preferences_service.dart';
 import 'widgets/exit_confirm_dialog.dart';
 
 /// 디버그 모드에서 사용할 URL (--dart-define=DEBUG_URL=... 로 오버라이드 가능)
@@ -37,6 +40,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // SharedPreferences 캐싱 초기화
+  await PreferencesService.init();
+
   // Firebase 초기화 (실제 Firebase 프로젝트 없이도 컴파일 가능하도록 try-catch)
   try {
     await Firebase.initializeApp();
@@ -53,12 +59,29 @@ void main() async {
     debugPrint('Firebase initialization skipped: $e');
   }
 
+  // Global error handlers (Firebase 초기화 이후 등록하여 Crashlytics 정상 동작 보장)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[GlobalError] Flutter error: ${details.exceptionAsString()}');
+    try {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    } catch (_) {}
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[GlobalError] Unhandled error: $error\n$stack');
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
+    return true;
+  };
+
   // AdMob 초기화
   await MobileAds.instance.initialize();
   debugPrint('AdMob initialized');
 
   // 광고 미리 로드
-  AdManager().preloadAllAds();
+  unawaited(AdManager().preloadAllAds());
 
   runApp(const MyApp());
 }
@@ -143,10 +166,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   /// 앱 환경 정보를 WebView에 주입
   Future<void> _injectAppEnvironment() async {
     // viewPadding: 시스템 UI(노치, 네비게이션 바)만 고려 (키보드 제외)
-    final safeAreaTop = MediaQuery.of(context).viewPadding.top;
-    final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
-    final safeAreaLeft = MediaQuery.of(context).viewPadding.left;
-    final safeAreaRight = MediaQuery.of(context).viewPadding.right;
+    final viewPadding = MediaQuery.of(context).viewPadding;
+    final safeAreaTop = viewPadding.top;
+    final safeAreaBottom = viewPadding.bottom;
+    final safeAreaLeft = viewPadding.left;
+    final safeAreaRight = viewPadding.right;
+
+    // BridgeService에 실제 safe area 값 전달
+    _bridgeService?.updateSafeArea(viewPadding);
 
     final js =
         '''
@@ -246,7 +273,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       // WebView 추가 설정
       androidController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          return GeolocationPermissionsResponse(allow: false, retain: false);
+          return const GeolocationPermissionsResponse(
+            allow: false,
+            retain: false,
+          );
         },
       );
     }

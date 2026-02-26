@@ -34,23 +34,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Global error handlers
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('[GlobalError] Flutter error: ${details.exceptionAsString()}');
-    try {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-    } catch (_) {}
-  };
-
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    debugPrint('[GlobalError] Unhandled error: $error\n$stack');
-    try {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    } catch (_) {}
-    return true;
-  };
-
   // 가로 모드 방지 및 세로 모드 고정
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -75,6 +58,23 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization skipped: $e');
   }
+
+  // Global error handlers (Firebase 초기화 이후 등록하여 Crashlytics 정상 동작 보장)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[GlobalError] Flutter error: ${details.exceptionAsString()}');
+    try {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    } catch (_) {}
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[GlobalError] Unhandled error: $error\n$stack');
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    } catch (_) {}
+    return true;
+  };
 
   // AdMob 초기화
   await MobileAds.instance.initialize();

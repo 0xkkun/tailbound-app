@@ -41,17 +41,27 @@ class BridgeService {
       return;
     }
 
-    debugPrint('[Bridge] Received: ${bridgeMessage.type} (id: ${bridgeMessage.id})');
+    debugPrint(
+      '[Bridge] Received: ${bridgeMessage.type} (id: ${bridgeMessage.id})',
+    );
 
     try {
       final result = await _routeMessage(bridgeMessage);
       await _sendResponse(
-        BridgeResponse.success(bridgeMessage.id, bridgeMessage.type, data: result),
+        BridgeResponse.success(
+          bridgeMessage.id,
+          bridgeMessage.type,
+          data: result,
+        ),
       );
     } catch (e) {
       debugPrint('[Bridge] Error handling ${bridgeMessage.type}: $e');
       await _sendResponse(
-        BridgeResponse.failure(bridgeMessage.id, bridgeMessage.type, e.toString()),
+        BridgeResponse.failure(
+          bridgeMessage.id,
+          bridgeMessage.type,
+          e.toString(),
+        ),
       );
     }
   }
@@ -227,7 +237,9 @@ class BridgeService {
   }
 
   /// Handles an analytics impression event (stub implementation).
-  Future<Map<String, dynamic>> _handleAnalyticsImpression(BridgeMessage msg) async {
+  Future<Map<String, dynamic>> _handleAnalyticsImpression(
+    BridgeMessage msg,
+  ) async {
     final params = msg.getMapOrNull('params');
     debugPrint('[Bridge] Analytics Impression (not implemented): $params');
     return {'success': true};
@@ -240,7 +252,9 @@ class BridgeService {
   }
 
   /// Submits a score to Game Center (stub implementation).
-  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(BridgeMessage msg) async {
+  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(
+    BridgeMessage msg,
+  ) async {
     final score = msg.getStringOrNull('score');
     debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
     return {'success': false, 'submitted': false};
@@ -288,6 +302,8 @@ class BridgeService {
         'window.dispatchEvent(new CustomEvent(\'flutterBridgeResult\', { detail: JSON.parse($jsStringLiteral) }));';
 
     await webViewController.runJavaScript(js);
-    debugPrint('[Bridge] Result sent: ${response.type} (success: ${response.success})');
+    debugPrint(
+      '[Bridge] Result sent: ${response.type} (success: ${response.success})',
+    );
   }
 }

@@ -269,7 +269,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       // WebView 추가 설정
       androidController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          return const GeolocationPermissionsResponse(allow: false, retain: false);
+          return const GeolocationPermissionsResponse(
+            allow: false,
+            retain: false,
+          );
         },
       );
     }

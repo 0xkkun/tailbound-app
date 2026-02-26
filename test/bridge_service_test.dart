@@ -75,7 +75,10 @@ void main() {
         'type': 'haptic.impact',
         'payload': <String, dynamic>{},
       });
-      expect(msg.getString('style', defaultValue: 'mediumImpact'), 'mediumImpact');
+      expect(
+        msg.getString('style', defaultValue: 'mediumImpact'),
+        'mediumImpact',
+      );
     });
 
     test('share message extracts url and optional title', () {

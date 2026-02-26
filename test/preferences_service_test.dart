@@ -6,15 +6,12 @@ void main() {
       // PreferencesService._instance is null before init
       // We can't easily reset it, but we can test the contract
       // This test verifies the error message format
-      expect(
-        () {
-          // Force a fresh state by testing the error type
-          throw StateError(
-            'PreferencesService.init() must be called before accessing instance',
-          );
-        },
-        throwsStateError,
-      );
+      expect(() {
+        // Force a fresh state by testing the error type
+        throw StateError(
+          'PreferencesService.init() must be called before accessing instance',
+        );
+      }, throwsStateError);
     });
   });
 }

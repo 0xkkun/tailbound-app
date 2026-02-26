@@ -17,27 +17,17 @@ void main() {
     });
 
     test('throws FormatException when id is missing', () {
-      final json = {
-        'type': 'storage.get',
-        'payload': <String, dynamic>{},
-      };
+      final json = {'type': 'storage.get', 'payload': <String, dynamic>{}};
       expect(() => BridgeMessage.fromJson(json), throwsFormatException);
     });
 
     test('throws FormatException when type is missing', () {
-      final json = {
-        'id': 'msg-1',
-        'payload': <String, dynamic>{},
-      };
+      final json = {'id': 'msg-1', 'payload': <String, dynamic>{}};
       expect(() => BridgeMessage.fromJson(json), throwsFormatException);
     });
 
     test('throws FormatException when payload is not a map', () {
-      final json = {
-        'id': 'msg-1',
-        'type': 'test',
-        'payload': 'not-a-map',
-      };
+      final json = {'id': 'msg-1', 'type': 'test', 'payload': 'not-a-map'};
       expect(() => BridgeMessage.fromJson(json), throwsFormatException);
     });
 

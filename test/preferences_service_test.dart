@@ -11,11 +11,13 @@ void main() {
     test('instance throws StateError before init', () {
       expect(
         () => PreferencesService.instance,
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('PreferencesService.init()'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('PreferencesService.init()'),
+          ),
+        ),
       );
     });
   });

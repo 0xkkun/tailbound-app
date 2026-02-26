@@ -4,84 +4,93 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../ad_manager.dart';
+import '../models/bridge_message.dart';
+import 'preferences_service.dart';
 
 /// Flutter Bridge Service
-/// 웹 게임과 네이티브 기능 간의 통합 브리지
+///
+/// Provides communication between the WebView-based game and native Flutter
+/// capabilities such as ads, storage, haptics, and sharing.
+///
+/// Messages are received as JSON strings via the `FlutterBridge` JavaScript
+/// channel, parsed into [BridgeMessage] instances, routed to the appropriate
+/// handler, and results are sent back as [BridgeResponse] via CustomEvent.
 class BridgeService {
+  /// The [WebViewController] used to communicate with the WebView.
   final WebViewController webViewController;
 
+  /// Creates a [BridgeService] bound to the given [webViewController].
   BridgeService(this.webViewController);
 
-  /// JavaScript Channel 메시지 핸들러
+  /// Handles an incoming JSON [message] from the JavaScript bridge.
+  ///
+  /// Parses the message into a [BridgeMessage], routes it to the appropriate
+  /// handler, and sends the result back to the WebView.
   Future<void> handleMessage(String message) async {
+    late final BridgeMessage bridgeMessage;
     try {
-      final data = jsonDecode(message) as Map<String, dynamic>;
-      final id = data['id'] as String;
-      final type = data['type'] as String;
-      final payload = data['payload'] as Map<String, dynamic>;
-
-      debugPrint('[Bridge] Received: $type (id: $id)');
-
-      dynamic result;
-      try {
-        switch (type) {
-          case 'ad.request':
-            result = await _handleAdRequest(payload);
-            break;
-          case 'ad.preload':
-            result = await _handleAdPreload(payload);
-            break;
-          case 'safeArea.get':
-            result = await _getSafeArea();
-            break;
-          case 'storage.set':
-            result = await _setStorage(payload);
-            break;
-          case 'storage.get':
-            result = await _getStorage(payload);
-            break;
-          case 'storage.remove':
-            result = await _removeStorage(payload);
-            break;
-          case 'haptic.impact':
-            result = await _triggerHaptic(payload);
-            break;
-          case 'share.open':
-            result = await _shareContent(payload);
-            break;
-          case 'analytics.click':
-            result = await _handleAnalyticsClick(payload);
-            break;
-          case 'analytics.impression':
-            result = await _handleAnalyticsImpression(payload);
-            break;
-          case 'gameCenter.openLeaderboard':
-            result = await _handleGameCenterOpenLeaderboard();
-            break;
-          case 'gameCenter.submitScore':
-            result = await _handleGameCenterSubmitScore(payload);
-            break;
-          default:
-            throw Exception('Unknown command: $type');
-        }
-
-        await _sendResult(id, type, success: true, data: result);
-      } catch (e) {
-        debugPrint('[Bridge] Error handling $type: $e');
-        await _sendResult(id, type, success: false, error: e.toString());
+      final json = jsonDecode(message);
+      if (json is! Map<String, dynamic>) {
+        debugPrint('[Bridge] Message is not a JSON object');
+        return;
       }
-    } catch (e) {
+      bridgeMessage = BridgeMessage.fromJson(json);
+    } on FormatException catch (e) {
       debugPrint('[Bridge] Failed to parse message: $e');
+      return;
+    }
+
+    debugPrint('[Bridge] Received: ${bridgeMessage.type} (id: ${bridgeMessage.id})');
+
+    try {
+      final result = await _routeMessage(bridgeMessage);
+      await _sendResponse(
+        BridgeResponse.success(bridgeMessage.id, bridgeMessage.type, data: result),
+      );
+    } catch (e) {
+      debugPrint('[Bridge] Error handling ${bridgeMessage.type}: $e');
+      await _sendResponse(
+        BridgeResponse.failure(bridgeMessage.id, bridgeMessage.type, e.toString()),
+      );
     }
   }
 
-  /// 광고 요청 처리
-  Future<Map<String, dynamic>> _handleAdRequest(
-    Map<String, dynamic> payload,
-  ) async {
-    final adTypeStr = payload['adType'] as String;
+  /// Routes a [BridgeMessage] to the correct handler based on its type.
+  Future<Map<String, dynamic>> _routeMessage(BridgeMessage msg) async {
+    switch (msg.type) {
+      case 'ad.request':
+        return _handleAdRequest(msg);
+      case 'ad.preload':
+        return _handleAdPreload(msg);
+      case 'safeArea.get':
+        return _getSafeArea();
+      case 'storage.set':
+        return _setStorage(msg);
+      case 'storage.get':
+        return _getStorage(msg);
+      case 'storage.remove':
+        return _removeStorage(msg);
+      case 'haptic.impact':
+        return _triggerHaptic(msg);
+      case 'share.open':
+        return _shareContent(msg);
+      case 'analytics.click':
+        return _handleAnalyticsClick(msg);
+      case 'analytics.impression':
+        return _handleAnalyticsImpression(msg);
+      case 'gameCenter.openLeaderboard':
+        return _handleGameCenterOpenLeaderboard();
+      case 'gameCenter.submitScore':
+        return _handleGameCenterSubmitScore(msg);
+      default:
+        throw Exception('Unknown command: ${msg.type}');
+    }
+  }
+
+  /// Handles a rewarded ad request.
+  Future<Map<String, dynamic>> _handleAdRequest(BridgeMessage msg) async {
+    final adTypeStr = msg.getString('adType');
     debugPrint('[Bridge] Ad request: $adTypeStr');
 
     final adType = AdManager.parseRewardAdType(adTypeStr);
@@ -91,7 +100,6 @@ class BridgeService {
       throw Exception('Ad not ready: $adTypeStr');
     }
 
-    // 광고 표시 전 게임 pause
     await pauseGame();
 
     bool rewarded = false;
@@ -103,7 +111,6 @@ class BridgeService {
       },
       onAdClosed: () {
         debugPrint('[Bridge] Ad closed');
-        // 광고 종료 후 게임 resume
         resumeGame();
       },
     );
@@ -112,11 +119,9 @@ class BridgeService {
     return {'success': success, 'rewarded': rewarded};
   }
 
-  /// 광고 미리 로드 요청 처리
-  Future<Map<String, dynamic>> _handleAdPreload(
-    Map<String, dynamic> payload,
-  ) async {
-    final adTypeStr = payload['adType'] as String;
+  /// Handles an ad preload request.
+  Future<Map<String, dynamic>> _handleAdPreload(BridgeMessage msg) async {
+    final adTypeStr = msg.getString('adType');
     debugPrint('[Bridge] Ad preload request: $adTypeStr');
 
     final adType = AdManager.parseRewardAdType(adTypeStr);
@@ -126,10 +131,8 @@ class BridgeService {
     return {'success': true};
   }
 
-  /// Safe Area 조회
+  /// Returns the device safe area insets.
   Future<Map<String, dynamic>> _getSafeArea() async {
-    // MediaQuery를 사용할 수 없으므로, 플랫폼별 기본값 반환
-    // 실제 값은 앱 초기화 시 주입됨 (__APP_ENV__)
     return {
       'top': Platform.isIOS ? 47.0 : 0.0,
       'bottom': Platform.isIOS ? 34.0 : 0.0,
@@ -138,141 +141,112 @@ class BridgeService {
     };
   }
 
-  /// 로컬 스토리지 저장
-  Future<Map<String, dynamic>> _setStorage(Map<String, dynamic> payload) async {
-    final key = payload['key'] as String;
-    final value = payload['value'] as String;
+  /// Stores a key-value pair in local storage.
+  Future<Map<String, dynamic>> _setStorage(BridgeMessage msg) async {
+    final key = msg.getString('key');
+    final value = msg.getString('value');
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = PreferencesService.instance;
     await prefs.setString(key, value);
 
     debugPrint('[Bridge] Storage set: $key');
-
     return {'success': true};
   }
 
-  /// 로컬 스토리지 조회
-  Future<Map<String, dynamic>> _getStorage(Map<String, dynamic> payload) async {
-    final key = payload['key'] as String;
+  /// Retrieves a value from local storage.
+  Future<Map<String, dynamic>> _getStorage(BridgeMessage msg) async {
+    final key = msg.getString('key');
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = PreferencesService.instance;
     final value = prefs.getString(key);
 
     debugPrint('[Bridge] Storage get: $key = $value');
-
     return {'success': true, 'value': value};
   }
 
-  /// 로컬 스토리지 삭제
-  Future<Map<String, dynamic>> _removeStorage(
-    Map<String, dynamic> payload,
-  ) async {
-    final key = payload['key'] as String;
+  /// Removes a key from local storage.
+  Future<Map<String, dynamic>> _removeStorage(BridgeMessage msg) async {
+    final key = msg.getString('key');
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = PreferencesService.instance;
     await prefs.remove(key);
 
     debugPrint('[Bridge] Storage remove: $key');
-
     return {'success': true};
   }
 
-  /// 햅틱 피드백 (7종 + 레거시 3종 호환)
-  Future<Map<String, dynamic>> _triggerHaptic(
-    Map<String, dynamic> payload,
-  ) async {
-    final style = payload['style'] as String? ?? 'mediumImpact';
+  /// Triggers haptic feedback based on the requested style.
+  ///
+  /// Supports 7 standard styles plus 3 legacy aliases.
+  Future<Map<String, dynamic>> _triggerHaptic(BridgeMessage msg) async {
+    final style = msg.getString('style', defaultValue: 'mediumImpact');
 
     switch (style) {
       case 'selectionClick':
         await HapticFeedback.selectionClick();
-        break;
       case 'lightImpact':
-        await HapticFeedback.lightImpact();
-        break;
-      case 'mediumImpact':
-        await HapticFeedback.mediumImpact();
-        break;
-      case 'heavyImpact':
-        await HapticFeedback.heavyImpact();
-        break;
-      case 'notificationSuccess':
-        await HapticFeedback.lightImpact();
-        break;
-      case 'notificationWarning':
-        await HapticFeedback.mediumImpact();
-        break;
-      case 'notificationError':
-        await HapticFeedback.heavyImpact();
-        break;
-      // 레거시 호환
       case 'light':
         await HapticFeedback.lightImpact();
-        break;
+      case 'mediumImpact':
       case 'medium':
         await HapticFeedback.mediumImpact();
-        break;
+      case 'heavyImpact':
       case 'heavy':
         await HapticFeedback.heavyImpact();
-        break;
+      case 'notificationSuccess':
+        await HapticFeedback.lightImpact();
+      case 'notificationWarning':
+        await HapticFeedback.mediumImpact();
+      case 'notificationError':
+        await HapticFeedback.heavyImpact();
       default:
         await HapticFeedback.mediumImpact();
     }
 
     debugPrint('[Bridge] Haptic: $style');
-
     return {'success': true};
   }
 
-  /// 공유 다이얼로그
-  Future<Map<String, dynamic>> _shareContent(
-    Map<String, dynamic> payload,
-  ) async {
-    final url = payload['url'] as String;
-    final title = payload['title'] as String?;
+  /// Opens the native share dialog.
+  Future<Map<String, dynamic>> _shareContent(BridgeMessage msg) async {
+    final url = msg.getString('url');
+    final title = msg.getStringOrNull('title');
 
     final text = title != null ? '$title\n$url' : url;
     await Share.share(text);
 
     debugPrint('[Bridge] Share: $url');
-
     return {'success': true};
   }
 
-  /// Analytics 클릭 이벤트 (더미 구현)
-  Future<Map<String, dynamic>> _handleAnalyticsClick(
-    Map<String, dynamic> payload,
-  ) async {
-    final params = payload['params'] as Map<String, dynamic>?;
+  /// Handles an analytics click event (stub implementation).
+  Future<Map<String, dynamic>> _handleAnalyticsClick(BridgeMessage msg) async {
+    final params = msg.getMapOrNull('params');
     debugPrint('[Bridge] Analytics Click (not implemented): $params');
     return {'success': true};
   }
 
-  /// Analytics 노출 이벤트 (더미 구현)
-  Future<Map<String, dynamic>> _handleAnalyticsImpression(
-    Map<String, dynamic> payload,
-  ) async {
-    final params = payload['params'] as Map<String, dynamic>?;
+  /// Handles an analytics impression event (stub implementation).
+  Future<Map<String, dynamic>> _handleAnalyticsImpression(BridgeMessage msg) async {
+    final params = msg.getMapOrNull('params');
     debugPrint('[Bridge] Analytics Impression (not implemented): $params');
     return {'success': true};
   }
 
-  /// Game Center 리더보드 열기 (더미 구현)
+  /// Opens the Game Center leaderboard (stub implementation).
   Future<Map<String, dynamic>> _handleGameCenterOpenLeaderboard() async {
     debugPrint('[Bridge] Game Center Open Leaderboard (not implemented)');
     return {'success': false};
   }
 
-  /// Game Center 점수 제출 (더미 구현)
-  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(
-    Map<String, dynamic> payload,
-  ) async {
-    final score = payload['score'] as String?;
+  /// Submits a score to Game Center (stub implementation).
+  Future<Map<String, dynamic>> _handleGameCenterSubmitScore(BridgeMessage msg) async {
+    final score = msg.getStringOrNull('score');
     debugPrint('[Bridge] Game Center Submit Score (not implemented): $score');
     return {'success': false, 'submitted': false};
   }
 
-  /// 게임 pause (광고 표시 전 / 앱 백그라운드 전환 시)
+  /// Pauses the game in the WebView (before ads or app backgrounding).
   Future<void> pauseGame() async {
     try {
       await webViewController.runJavaScript('''
@@ -280,7 +254,6 @@ class BridgeService {
           window.__GAME_PAUSE__();
           console.log('[Flutter] Game paused for ad');
         } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
-          // Fallback: ticker만 멈춤
           window.__PIXI_APP__.ticker.stop();
           console.log('[Flutter] Game paused (fallback) for ad');
         }
@@ -290,7 +263,7 @@ class BridgeService {
     }
   }
 
-  /// 게임 resume (광고 종료 후 / 앱 포그라운드 복귀 시)
+  /// Resumes the game in the WebView (after ads or app foregrounding).
   Future<void> resumeGame() async {
     try {
       await webViewController.runJavaScript('''
@@ -298,7 +271,6 @@ class BridgeService {
           window.__GAME_RESUME__();
           console.log('[Flutter] Game resumed after ad');
         } else if (window.__PIXI_APP__ && window.__PIXI_APP__.ticker) {
-          // Fallback: ticker만 재개
           window.__PIXI_APP__.ticker.start();
           console.log('[Flutter] Game resumed (fallback) after ad');
         }
@@ -308,31 +280,14 @@ class BridgeService {
     }
   }
 
-  /// 결과를 WebView로 전송 (CustomEvent)
-  Future<void> _sendResult(
-    String id,
-    String type, {
-    required bool success,
-    dynamic data,
-    String? error,
-  }) async {
-    final result = {
-      'id': id,
-      'type': type,
-      'success': success,
-      'data': data,
-      'error': error,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
-
-    final resultJson = jsonEncode(result);
-    // jsonEncode를 두 번 호출하여 JS string literal로 안전하게 전달
-    // 첫 번째: Object → JSON string, 두 번째: JSON string → JS string literal
+  /// Sends a [BridgeResponse] back to the WebView via CustomEvent.
+  Future<void> _sendResponse(BridgeResponse response) async {
+    final resultJson = jsonEncode(response.toJson());
     final jsStringLiteral = jsonEncode(resultJson);
     final js =
         'window.dispatchEvent(new CustomEvent(\'flutterBridgeResult\', { detail: JSON.parse($jsStringLiteral) }));';
 
     await webViewController.runJavaScript(js);
-    debugPrint('[Bridge] Result sent: $type (success: $success)');
+    debugPrint('[Bridge] Result sent: ${response.type} (success: ${response.success})');
   }
 }

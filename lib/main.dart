@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'ad_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'services/bridge_service.dart';
+import 'services/preferences_service.dart';
 import 'widgets/exit_confirm_dialog.dart';
 
 /// 디버그 모드에서 사용할 URL (--dart-define=DEBUG_URL=... 로 오버라이드 가능)
@@ -31,11 +33,25 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Global error handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[GlobalError] Flutter error: ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[GlobalError] Unhandled error: $error\n$stack');
+    return true;
+  };
+
   // 가로 모드 방지 및 세로 모드 고정
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // SharedPreferences 캐싱 초기화
+  await PreferencesService.init();
 
   // Firebase 초기화 (실제 Firebase 프로젝트 없이도 컴파일 가능하도록 try-catch)
   try {
@@ -58,7 +74,7 @@ void main() async {
   debugPrint('AdMob initialized');
 
   // 광고 미리 로드
-  AdManager().preloadAllAds();
+  unawaited(AdManager().preloadAllAds());
 
   runApp(const MyApp());
 }
@@ -246,7 +262,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       // WebView 추가 설정
       androidController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          return GeolocationPermissionsResponse(allow: false, retain: false);
+          return const GeolocationPermissionsResponse(allow: false, retain: false);
         },
       );
     }

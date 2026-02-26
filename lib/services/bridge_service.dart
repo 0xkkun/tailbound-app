@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -20,15 +19,23 @@ class BridgeService {
   /// The [WebViewController] used to communicate with the WebView.
   final WebViewController webViewController;
 
+  /// Cached safe area insets from MediaQuery (set by the host widget).
+  EdgeInsets _safeAreaInsets = EdgeInsets.zero;
+
   /// Creates a [BridgeService] bound to the given [webViewController].
   BridgeService(this.webViewController);
+
+  /// Updates the cached safe area insets (call from widget with MediaQuery access).
+  void updateSafeArea(EdgeInsets insets) {
+    _safeAreaInsets = insets;
+  }
 
   /// Handles an incoming JSON [message] from the JavaScript bridge.
   ///
   /// Parses the message into a [BridgeMessage], routes it to the appropriate
   /// handler, and sends the result back to the WebView.
   Future<void> handleMessage(String message) async {
-    late final BridgeMessage bridgeMessage;
+    final BridgeMessage bridgeMessage;
     try {
       final json = jsonDecode(message);
       if (json is! Map<String, dynamic>) {
@@ -36,7 +43,7 @@ class BridgeService {
         return;
       }
       bridgeMessage = BridgeMessage.fromJson(json);
-    } on FormatException catch (e) {
+    } catch (e) {
       debugPrint('[Bridge] Failed to parse message: $e');
       return;
     }
@@ -113,20 +120,26 @@ class BridgeService {
     await pauseGame();
 
     bool rewarded = false;
-    final success = await AdManager().showRewardedAd(
-      adType,
-      onRewarded: (rewardType, rewardAmount) {
-        debugPrint('[Bridge] Rewarded: $rewardType, amount: $rewardAmount');
-        rewarded = true;
-      },
-      onAdClosed: () {
-        debugPrint('[Bridge] Ad closed');
-        resumeGame();
-      },
-    );
+    try {
+      final success = await AdManager().showRewardedAd(
+        adType,
+        onRewarded: (rewardType, rewardAmount) {
+          debugPrint('[Bridge] Rewarded: $rewardType, amount: $rewardAmount');
+          rewarded = true;
+        },
+        onAdClosed: () {
+          debugPrint('[Bridge] Ad closed');
+          resumeGame();
+        },
+      );
 
-    debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
-    return {'success': success, 'rewarded': rewarded};
+      debugPrint('[Bridge] Ad result: success=$success, rewarded=$rewarded');
+      return {'success': success, 'rewarded': rewarded};
+    } catch (e) {
+      // 광고 표시 실패 시에도 게임 resume 보장
+      resumeGame();
+      rethrow;
+    }
   }
 
   /// Handles an ad preload request.
@@ -141,13 +154,13 @@ class BridgeService {
     return {'success': true};
   }
 
-  /// Returns the device safe area insets.
+  /// Returns the device safe area insets from cached MediaQuery values.
   Future<Map<String, dynamic>> _getSafeArea() async {
     return {
-      'top': Platform.isIOS ? 47.0 : 0.0,
-      'bottom': Platform.isIOS ? 34.0 : 0.0,
-      'left': 0.0,
-      'right': 0.0,
+      'top': _safeAreaInsets.top,
+      'bottom': _safeAreaInsets.bottom,
+      'left': _safeAreaInsets.left,
+      'right': _safeAreaInsets.right,
     };
   }
 

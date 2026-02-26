@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Cached wrapper around [SharedPreferences] to avoid repeated async lookups.
@@ -6,6 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// synchronous [instance] getter throughout the app.
 class PreferencesService {
   static SharedPreferences? _instance;
+
+  /// Resets the cached instance (for testing only).
+  @visibleForTesting
+  static void resetForTesting() {
+    _instance = null;
+  }
 
   /// Initializes and caches the [SharedPreferences] instance.
   ///

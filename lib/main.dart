@@ -166,10 +166,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   /// 앱 환경 정보를 WebView에 주입
   Future<void> _injectAppEnvironment() async {
     // viewPadding: 시스템 UI(노치, 네비게이션 바)만 고려 (키보드 제외)
-    final safeAreaTop = MediaQuery.of(context).viewPadding.top;
-    final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
-    final safeAreaLeft = MediaQuery.of(context).viewPadding.left;
-    final safeAreaRight = MediaQuery.of(context).viewPadding.right;
+    final viewPadding = MediaQuery.of(context).viewPadding;
+    final safeAreaTop = viewPadding.top;
+    final safeAreaBottom = viewPadding.bottom;
+    final safeAreaLeft = viewPadding.left;
+    final safeAreaRight = viewPadding.right;
+
+    // BridgeService에 실제 safe area 값 전달
+    _bridgeService?.updateSafeArea(viewPadding);
 
     final js =
         '''
